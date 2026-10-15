@@ -1,0 +1,2053 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ميزان القيمة العادلة</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FVG">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0c1412">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* Layout: trading-desk shell — fixed side rail of book chapters, scrolling work surface of ledger-like panels. Dark-first ink with assay gold (the book's own gold). */
+:root{
+  --bg:#0c1412; --panel:#121e1b; --panel2:#172623; --sunk:#0a110f; --line:#22342f; --line2:#2d443d;
+  --fg:#ebe6d8; --muted:#8fa199; --faint:#5f726b;
+  --gold:#d6b25e; --gold2:#f1d793; --goldInk:#1a1406;
+  --up:#4cc38a; --down:#e86a5c; --warn:#e3b341; --info:#6fb3d9;
+  --upBg:rgba(76,195,138,.12); --downBg:rgba(232,106,92,.12); --warnBg:rgba(227,179,65,.12); --infoBg:rgba(111,179,217,.12);
+  --f-display:"Reem Kufi","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic","Segoe UI",Tahoma,system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px; --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f3f1ea; --panel:#ffffff; --panel2:#f8f6ef; --sunk:#ece8dc; --line:#e0dacb; --line2:#cfc7b3;
+    --fg:#1b2420; --muted:#5d6b64; --faint:#8e998f;
+    --gold:#94701c; --gold2:#6f520e; --goldInk:#fffaf0;
+    --up:#1c8753; --down:#bf3b2d; --warn:#9c7100; --info:#2370a0;
+    --upBg:rgba(28,135,83,.10); --downBg:rgba(191,59,45,.09); --warnBg:rgba(156,113,0,.10); --infoBg:rgba(35,112,160,.09);
+    --shadow:0 1px 2px rgba(40,30,0,.06), 0 6px 20px rgba(40,30,0,.05);
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f3f1ea; --panel:#ffffff; --panel2:#f8f6ef; --sunk:#ece8dc; --line:#e0dacb; --line2:#cfc7b3;
+  --fg:#1b2420; --muted:#5d6b64; --faint:#8e998f;
+  --gold:#94701c; --gold2:#6f520e; --goldInk:#fffaf0;
+  --up:#1c8753; --down:#bf3b2d; --warn:#9c7100; --info:#2370a0;
+  --upBg:rgba(28,135,83,.10); --downBg:rgba(191,59,45,.09); --warnBg:rgba(156,113,0,.10); --infoBg:rgba(35,112,160,.09);
+  --shadow:0 1px 2px rgba(40,30,0,.06), 0 6px 20px rgba(40,30,0,.05);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--gold)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.num,.mono{font-family:var(--f-num);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.app{min-height:100%;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;
+  padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;gap:12px;align-items:center;min-width:0}
+.logo{width:38px;height:38px;color:var(--gold);flex:none}
+.brand-name{font-family:var(--f-display);font-size:21px;font-weight:700;letter-spacing:0;color:var(--gold2);line-height:1.2}
+.brand-sub{font-size:12px;color:var(--muted)}
+.co-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.co-bar select{width:auto;min-width:200px;max-width:320px}
+
+.body{flex:1;display:grid;grid-template-columns:232px minmax(0,1fr);min-height:0}
+.side{border-left:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px;position:sticky;top:61px;align-self:start;max-height:calc(100vh - 61px);overflow:auto}
+.side .grp{font-size:11px;color:var(--faint);letter-spacing:.04em;padding:14px 12px 4px}
+.side button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--muted);font-size:14px}
+.side button .k{font-family:var(--f-num);font-size:11px;color:var(--faint);min-width:18px}
+.side button:hover{background:var(--panel2);color:var(--fg)}
+.side button.on{background:var(--panel2);color:var(--gold2);box-shadow:inset -3px 0 0 var(--gold)}
+.side button:focus-visible{outline:2px solid var(--gold)}
+.view{padding-block:22px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0;max-width:1320px;width:100%}
+
+@media (max-width:900px){
+  .body{grid-template-columns:1fr}
+  .side{position:static;max-height:none;flex-direction:row;overflow-x:auto;border-left:0;border-bottom:1px solid var(--line);padding:8px max(16px,env(safe-area-inset-left,0px));gap:4px}
+  .side .grp{display:none}
+  .side button{white-space:nowrap;padding:7px 10px}
+  .side button.on{box-shadow:inset 0 -2px 0 var(--gold)}
+  .co-bar select{min-width:0;flex:1 1 160px}
+}
+
+h1.vt{font-family:var(--f-display);font-weight:600;font-size:28px;margin:0 0 4px;color:var(--fg);text-wrap:balance;line-height:1.3}
+.vsub{color:var(--muted);margin:0 0 20px;max-width:75ch}
+h2.st{font-family:var(--f-display);font-weight:600;font-size:18px;margin:0 0 12px;color:var(--gold2);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h3{font-size:15px;margin:0 0 8px;font-weight:600}
+.pg{font-family:var(--f-num);font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:20px;padding:0 8px;font-weight:400;white-space:nowrap}
+.muted{color:var(--muted)} .small{font-size:12.5px} .faint{color:var(--faint)}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);min-width:0}
+.panel.flat{box-shadow:none;background:var(--panel2)}
+.stack{display:flex;flex-direction:column;gap:16px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.gauto{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+@media (max-width:1100px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.row{display:flex;align-items:center;flex-wrap:wrap}
+.gap{gap:8px} .gap2{gap:16px}
+.spread{justify-content:space-between}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--gold);background:var(--gold);color:var(--goldInk);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13.5px;white-space:nowrap;line-height:1.4}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line2);font-weight:500}
+.btn.ghost:hover{border-color:var(--gold);color:var(--gold2)}
+.btn.danger{border-color:var(--down);background:transparent;color:var(--down)}
+.btn.icon{padding:7px 10px}
+.btn.sm{padding:4px 10px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:12.5px;color:var(--muted)}
+.f .hint{font-size:11.5px;color:var(--faint)}
+input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{
+  width:100%;background:var(--sunk);border:1px solid var(--line);border-radius:7px;padding:7px 10px;min-height:36px;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);outline:none}
+input.n{font-family:var(--f-num);direction:ltr;text-align:right}
+textarea{min-height:90px;resize:vertical;line-height:1.6}
+.fields{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+
+/* hero value plate */
+.plate{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:0;border:1px solid var(--line2);border-radius:14px;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 10%,var(--panel)),var(--panel) 55%)}
+@media (max-width:760px){.plate{grid-template-columns:1fr}}
+.plate .a{padding:22px 24px;border-left:1px solid var(--line)}
+.plate .b{padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;align-content:center}
+.big{font-family:var(--f-num);font-size:clamp(38px,6vw,58px);font-weight:600;color:var(--gold2);line-height:1.05;direction:ltr;text-align:right;letter-spacing:-.02em}
+.big small{font-size:.35em;color:var(--muted);font-weight:400;margin-inline-start:6px}
+.kv .k{font-size:12px;color:var(--muted)}
+.kv .v{font-family:var(--f-num);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:2px 10px;border-radius:20px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap}
+.chip.up{color:var(--up);border-color:color-mix(in srgb,var(--up) 45%,transparent);background:var(--upBg)}
+.chip.down{color:var(--down);border-color:color-mix(in srgb,var(--down) 45%,transparent);background:var(--downBg)}
+.chip.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent);background:var(--warnBg)}
+.chip.info{color:var(--info);border-color:color-mix(in srgb,var(--info) 45%,transparent);background:var(--infoBg)}
+.chip.gold{color:var(--gold2);border-color:var(--gold)}
+.signal{display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2)}
+.signal .s{font-family:var(--f-display);font-size:22px;font-weight:700;min-width:84px;text-align:center}
+.signal.buy{border-color:color-mix(in srgb,var(--up) 50%,transparent);background:var(--upBg)} .signal.buy .s{color:var(--up)}
+.signal.sell{border-color:color-mix(in srgb,var(--down) 50%,transparent);background:var(--downBg)} .signal.sell .s{color:var(--down)}
+.signal.hold .s{color:var(--warn)}
+
+/* tables */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-align:right;padding:8px 10px;background:var(--panel2);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.n,th.n{font-family:var(--f-num);font-variant-numeric:tabular-nums;text-align:left;white-space:nowrap}
+td input{min-height:32px;padding:5px 8px}
+tfoot td{font-weight:600;background:var(--panel2)}
+
+/* narrative steps of the revised equation */
+.steps{display:flex;flex-direction:column;counter-reset:s}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px dashed var(--line)}
+.step:last-child{border-bottom:0}
+.step .no{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-num);font-size:12px;border:1px solid var(--gold);color:var(--gold2)}
+.step .t{font-weight:500}
+.step .d{font-size:12.5px;color:var(--muted)}
+.step .r{font-family:var(--f-num);text-align:left;font-size:15px;white-space:nowrap}
+.step.final{background:color-mix(in srgb,var(--gold) 10%,transparent);border-radius:8px;border-bottom:0;margin-top:4px}
+.step.final .no{background:var(--gold);color:var(--goldInk)}
+.step.final .r{color:var(--gold2);font-size:20px;font-weight:600}
+@media (prefers-reduced-motion:no-preference){
+  .step{animation:rise .35s both}
+  @keyframes rise{from{transform:translateY(4px);opacity:.4}to{transform:none;opacity:1}}
+}
+
+.formula{font-family:var(--f-num);direction:ltr;text-align:left;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;overflow-x:auto;white-space:nowrap}
+.formula.ar{font-family:var(--f-body);direction:rtl;text-align:right;white-space:normal}
+.outs{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.out{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;background:var(--panel2);flex-wrap:wrap}
+.out .l{font-size:13px;color:var(--muted)}
+.out .v{font-family:var(--f-num);font-weight:500;font-variant-numeric:tabular-nums}
+.out .note{flex-basis:100%;font-size:12px}
+.calc h3{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.calc .fields{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+details.acc{border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+details.acc>summary{cursor:pointer;padding:14px 18px;font-family:var(--f-display);font-size:17px;color:var(--gold2);list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary::after{content:"＋";color:var(--muted);font-family:var(--f-num)}
+details.acc[open]>summary::after{content:"－"}
+details.acc>.in{padding:0 18px 18px}
+
+.banner{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:8px;border:1px solid color-mix(in srgb,var(--info) 45%,transparent);background:var(--infoBg);color:var(--fg);font-size:13.5px}
+.banner.warn{border-color:color-mix(in srgb,var(--warn) 45%,transparent);background:var(--warnBg)}
+.chart-box{position:relative;height:280px;width:100%}
+.chart-box.sm{height:220px}
+.bar{height:8px;border-radius:6px;background:var(--sunk);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--gold);border-radius:6px}
+.ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.rung{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel2)}
+.rung .k{font-size:12px;color:var(--muted)} .rung .v{font-family:var(--f-num);font-size:16px}
+.rung.buy{border-color:color-mix(in srgb,var(--up) 40%,transparent)} .rung.sell{border-color:color-mix(in srgb,var(--down) 40%,transparent)}
+
+/* AI */
+.ai-card{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+.ai-card .hd{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);gap:8px}
+.ai-card .nm{font-family:var(--f-display);font-size:17px}
+.ai-card .bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--faint);display:inline-block}
+.dot.run{background:var(--warn);animation:pulse 1s infinite}
+.dot.ok{background:var(--up)} .dot.err{background:var(--down)}
+@keyframes pulse{50%{opacity:.3}}
+.md{font-size:13.5px;line-height:1.8;overflow-wrap:anywhere}
+.md p{margin:0 0 8px}
+.md ul{margin:0 0 8px;padding-inline-start:20px}
+.src{display:flex;flex-direction:column;gap:2px;font-size:12px;max-height:150px;overflow:auto}
+.src a{overflow-wrap:anywhere}
+pre.raw{max-height:260px;overflow:auto;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;direction:ltr;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}
+
+.check{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed var(--line)}
+.check:last-child{border-bottom:0}
+.check input{margin-top:5px;accent-color:var(--gold);width:16px;height:16px;flex:none}
+.score{display:flex;gap:4px}
+.score button{all:unset;cursor:pointer;width:28px;height:26px;border-radius:6px;border:1px solid var(--line2);display:grid;place-items:center;font-family:var(--f-num);font-size:12px;color:var(--muted)}
+.score button.on{background:var(--gold);color:var(--goldInk);border-color:var(--gold)}
+.score button:focus-visible{outline:2px solid var(--gold)}
+.ref-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.ref-item:last-child{border-bottom:0}
+.ref-item .formula{grid-column:1/-1}
+
+.confirm{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;z-index:50;padding:16px}
+.confirm-box{background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:20px;max-width:420px;width:100%}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--gold);color:var(--fg);padding:10px 18px;border-radius:10px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line2);border-radius:var(--r)}
+.fields .wide{grid-column:1/-1}
+[hidden]{display:none!important}
+th.n{font-family:var(--f-body)}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6v32M10 38h28M8 14h32" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M8 14l-5 11a6 3 0 0 0 10 0zM40 14l-5 11a6 3 0 0 0 10 0z" fill="currentColor" opacity=".85"/><circle cx="24" cy="6" r="2.6" fill="currentColor"/></svg>
+      <div>
+        <div class="brand-name">ميزان القيمة العادلة</div>
+        <div class="brand-sub">على منهج كتاب «تجربة تسوق في متاجر الأسهم»</div>
+      </div>
+    </div>
+    <div class="co-bar">
+      <label class="sr" for="coSelect">الشركة</label>
+      <select id="coSelect"></select>
+      <button class="btn ghost" id="btnNew" title="شركة جديدة">＋ جديدة</button>
+      <button class="btn ghost" id="btnDup" title="نسخ الشركة">نسخ</button>
+      <button class="btn ghost danger" id="btnDel" title="حذف الشركة">حذف</button>
+      <button class="btn ghost" id="btnExport" title="تصدير كل البيانات">تصدير</button>
+      <label class="btn ghost" title="استيراد ملف بيانات">استيراد<input type="file" id="fileImport" accept=".json" hidden></label>
+      <button class="btn ghost" id="btnTheme" title="تبديل المظهر">فاتح / داكن</button>
+    </div>
+  </header>
+  <div class="body">
+    <nav class="side" id="nav"></nav>
+    <main id="view" class="view"></main>
+  </div>
+  <div id="confirm" class="confirm" hidden>
+    <div class="confirm-box"><p id="confirmMsg"></p><div class="row gap"><button class="btn danger" id="confirmYes">تأكيد</button><button class="btn ghost" id="confirmNo">إلغاء</button></div></div>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+</div>
+<script>
+const SAUDI_RAW = `2222|أرامكو السعودية|Saudi Aramco|الطاقة
+2030|المصافي العربية السعودية (ساركو)|SARCO|الطاقة
+2380|بترو رابغ|Petro Rabigh|الطاقة
+2381|الحفر العربية|Arabian Drilling|الطاقة
+2382|أديس القابضة|ADES Holding|الطاقة
+4030|البحري|Bahri|الطاقة
+4200|الدريس|Aldrees|الطاقة
+1201|تكوين المتطورة للصناعات|Takween Advanced Industries|المواد الأساسية
+1202|مبكو|MEPCO|المواد الأساسية
+1210|الكيميائيات الأساسية (بي سي آي)|Basic Chemical Industries|المواد الأساسية
+1211|معادن|Maaden|المواد الأساسية
+1301|أسلاك|United Wire Factories (Aslak)|المواد الأساسية
+1304|اليمامة للحديد|Al Yamamah Steel|المواد الأساسية
+1320|أنابيب السعودية|Saudi Steel Pipes|المواد الأساسية
+1321|أنابيب الشرق|East Pipes|المواد الأساسية
+1322|المصانع الكبرى للتعدين (أماك)|Al Masane Al Kobra Mining (AMAK)|المواد الأساسية
+1323|يو سي آي سي (الكرتون المتحدة)|United Carton Industries (UCIC)|المواد الأساسية
+1324|صالح الراشد وأولاده|Saleh Abdulaziz Al Rashed & Sons|المواد الأساسية
+2001|كيمانول|Methanol Chemicals (Chemanol)|المواد الأساسية
+2010|سابك|SABIC|المواد الأساسية
+2020|سابك للمغذيات الزراعية|SABIC Agri-Nutrients|المواد الأساسية
+2060|التصنيع الوطنية|Tasnee|المواد الأساسية
+2090|الجبس الأهلية|National Gypsum|المواد الأساسية
+2150|زجاج|National Glass Industries (Zoujaj)|المواد الأساسية
+2170|اللجين|Alujain|المواد الأساسية
+2180|فيبكو|FIPCO|المواد الأساسية
+2200|أنابيب|Arabian Pipes|المواد الأساسية
+2210|نماء للكيماويات|Nama Chemicals|المواد الأساسية
+2220|معدنية|National Metal Manufacturing (Maadaniyah)|المواد الأساسية
+2223|لوبريف|Luberef|المواد الأساسية
+2240|الزامل للصناعة (المتقدمة لصناعات البناء)|Advanced Building Industries (Zamil)|المواد الأساسية
+2250|المجموعة السعودية للاستثمار الصناعي|SIIG|المواد الأساسية
+2290|ينساب|Yansab|المواد الأساسية
+2300|صناعة الورق|Saudi Paper Manufacturing|المواد الأساسية
+2310|سبكيم العالمية|Sipchem|المواد الأساسية
+2330|المتقدمة|Advanced Petrochemical|المواد الأساسية
+2350|كيان السعودية|Saudi Kayan|المواد الأساسية
+2360|الفخارية|Saudi Vitrified Clay Pipe|المواد الأساسية
+3002|أسمنت نجران|Najran Cement|المواد الأساسية
+3003|أسمنت المدينة|City Cement|المواد الأساسية
+3004|أسمنت الشمالية|Northern Region Cement|المواد الأساسية
+3005|أسمنت أم القرى|Umm Al-Qura Cement|المواد الأساسية
+3007|الواحة (زهرة الواحة)|Zahrat Al Waha|المواد الأساسية
+3008|الكثيري القابضة|Al Kathiri Holding|المواد الأساسية
+3010|الأسمنت العربية|Arabian Cement|المواد الأساسية
+3020|أسمنت اليمامة|Yamama Cement|المواد الأساسية
+3030|أسمنت السعودية|Saudi Cement|المواد الأساسية
+3040|أسمنت القصيم|Qassim Cement|المواد الأساسية
+3050|أسمنت الجنوب|Southern Province Cement|المواد الأساسية
+3060|أسمنت ينبع|Yanbu Cement|المواد الأساسية
+3080|أسمنت الشرقية|Eastern Province Cement|المواد الأساسية
+3090|أسمنت تبوك|Tabuk Cement|المواد الأساسية
+3091|أسمنت الجوف|Al Jouf Cement|المواد الأساسية
+3092|أسمنت الرياض|Riyadh Cement|المواد الأساسية
+4143|تالكو الصناعية|Al Taiseer Group TALCO Industrial|المواد الأساسية
+4145|العبيكان للزجاج|Al Obeikan Glass|المواد الأساسية
+4148|الوسائل الصناعية|Alwasail Industrial|المواد الأساسية
+1212|أسترا الصناعية|Astra Industrial Group|السلع الرأسمالية
+1214|شاكر|Al Hassan Ghazi Ibrahim Shaker|السلع الرأسمالية
+1302|بوان|Bawan|السلع الرأسمالية
+1303|الصناعات الكهربائية|Electrical Industries|السلع الرأسمالية
+2040|الخزف السعودي|Saudi Ceramic|السلع الرأسمالية
+2110|الكابلات السعودية|Saudi Cable|السلع الرأسمالية
+2160|أميانتيت|Amiantit|السلع الرأسمالية
+2320|البابطين للطاقة والاتصالات|Al-Babtain Power & Telecom|السلع الرأسمالية
+2370|مسك|Middle East Specialized Cables (MESC)|السلع الرأسمالية
+4110|باتك|Batic Investments and Logistics|السلع الرأسمالية
+4140|الصادرات الصناعية|Saudi Industrial Export|السلع الرأسمالية
+4141|العمران|Al-Omran Industrial Trading|السلع الرأسمالية
+4142|كابلات الرياض|Riyadh Cables|السلع الرأسمالية
+4144|رؤوم التجارية|Raoom Trading|السلع الرأسمالية
+4146|غاز العربية للخدمات|Gas Arabian Services|السلع الرأسمالية
+4147|سي جي إس القابضة|Consolidated Grunenfelder Saady Holding|السلع الرأسمالية
+1831|مهارة|Maharah Human Resources|الخدمات التجارية والمهنية
+1832|صدر|Sadr Logistics|الخدمات التجارية والمهنية
+1833|الموارد|Almawarid Manpower|الخدمات التجارية والمهنية
+1834|سماسكو|Saudi Manpower Solutions (SMASCO)|الخدمات التجارية والمهنية
+1835|تمكين|Tamkeen Human Resources|الخدمات التجارية والمهنية
+4270|طباعة وتغليف|Saudi Printing & Packaging|الخدمات التجارية والمهنية
+6004|كاتريون|CATRION Catering|الخدمات التجارية والمهنية
+2190|سيسكو القابضة|Sustained Infrastructure Holding (SISCO)|النقل
+4031|الخدمات الأرضية|Saudi Ground Services|النقل
+4040|سابتكو|Saudi Public Transport (SAPTCO)|النقل
+4260|بدجت السعودية|United International Transportation (Budget)|النقل
+4261|ذيب|Theeb Rent A Car|النقل
+4262|لومي|Lumi Rental|النقل
+4263|سال|SAL Saudi Logistics Services|النقل
+4264|طيران ناس|Flynas|النقل
+1213|نسيج|Naseej International Trading|السلع طويلة الأجل
+2130|صدق|Saudi Industrial Development (SIDC)|السلع طويلة الأجل
+2340|أرتكس (العبداللطيف سابقاً)|Artex Industrial Investment|السلع طويلة الأجل
+4011|لازوردي|L'azurde Jewelry|السلع طويلة الأجل
+4012|الأصيل (ثوب الأصيل)|Thob Al Aseel|السلع طويلة الأجل
+4180|مجموعة فتيحي|Fitaihi Holding Group|السلع طويلة الأجل
+1810|سيرا|Seera Holding Group|الخدمات الاستهلاكية
+1820|بان القابضة (الحكير سابقاً)|BAAN Holding Group|الخدمات الاستهلاكية
+1830|لجام للرياضة (وقت اللياقة)|Leejam Sports|الخدمات الاستهلاكية
+4170|شمس|Tourism Enterprise (Shams)|الخدمات الاستهلاكية
+4290|الخليج للتدريب|Al Khaleej Training & Education|الخدمات الاستهلاكية
+4291|الوطنية للتعليم|National Company for Learning & Education|الخدمات الاستهلاكية
+4292|عطاء التعليمية|Ataa Educational|الخدمات الاستهلاكية
+6002|هرفي للأغذية|Herfy Food Services|الخدمات الاستهلاكية
+6012|ريدان|Raydan Food|الخدمات الاستهلاكية
+6013|التطويرية الغذائية|Development Works Food|الخدمات الاستهلاكية
+6014|الآمار|Alamar Foods|الخدمات الاستهلاكية
+6015|أمريكانا|Americana Restaurants|الخدمات الاستهلاكية
+6016|بيت الشطيرة (برغرايززر)|Shatirah House Restaurant|الخدمات الاستهلاكية
+6018|الأندية الرياضية|Sport Clubs Company|الخدمات الاستهلاكية
+6019|المسار الشامل للتعليم|Almasar Alshamil Education|الخدمات الاستهلاكية
+6022|أرماح الرياضية|Armah Sports|الخدمات الاستهلاكية
+4070|تهامة|Tihama Advertising|الإعلام والترفيه
+4071|العربية (للتعهدات الفنية)|Arabian Contracting Services|الإعلام والترفيه
+4072|مجموعة إم بي سي|MBC Group|الإعلام والترفيه
+4210|الأبحاث والإعلام|Saudi Research & Media Group|الإعلام والترفيه
+4003|إكسترا|United Electronics (eXtra)|تجزئة السلع الكمالية
+4008|ساكو|SACO|تجزئة السلع الكمالية
+4050|ساسكو|Saudi Automotive Services (SASCO)|تجزئة السلع الكمالية
+4051|باعظيم|Baazeem Trading|تجزئة السلع الكمالية
+4190|جرير|Jarir Marketing|تجزئة السلع الكمالية
+4191|أبو معطي|Abo Moati Bookstores|تجزئة السلع الكمالية
+4192|السيف غاليري|Al-Saif Stores|تجزئة السلع الكمالية
+4193|نايس ون|Nice One Beauty|تجزئة السلع الكمالية
+4194|بيت التسويق|Marketing Home Group|تجزئة السلع الكمالية
+4240|سينومي ريتيل (إيه إف جي)|AFG International (Cenomi Retail)|تجزئة السلع الكمالية
+4265|شري التجارية|Cherry Trading|تجزئة السلع الكمالية
+4001|أسواق عبدالله العثيم|Abdullah Al-Othaim Markets|تجزئة السلع الاستهلاكية
+4006|أسواق المزرعة (التسويق السعودية)|Saudi Marketing (Farm Superstores)|تجزئة السلع الاستهلاكية
+4061|أنعام القابضة|Anaam International Holding|تجزئة السلع الاستهلاكية
+4160|ثمار|Thimar Development Holding|تجزئة السلع الاستهلاكية
+4161|بن داود|BinDawood Holding|تجزئة السلع الاستهلاكية
+4162|المنجم للأغذية|Almunajem Foods|تجزئة السلع الاستهلاكية
+4163|الدواء|Al-Dawaa Medical Services|تجزئة السلع الاستهلاكية
+4164|النهدي|Nahdi Medical|تجزئة السلع الاستهلاكية
+4165|الماجد للعود|Al Majed for Oud|تجزئة السلع الاستهلاكية
+2050|مجموعة صافولا|Savola Group|إنتاج الأغذية
+2100|وفرة|Wafrah for Industry & Development|إنتاج الأغذية
+2270|سدافكو|SADAFCO|إنتاج الأغذية
+2280|المراعي|Almarai|إنتاج الأغذية
+2281|تنمية|Tanmiah Food|إنتاج الأغذية
+2282|مياه نقي|Naqi Water|إنتاج الأغذية
+2283|المطاحن الأولى|First Milling|إنتاج الأغذية
+2284|المطاحن الحديثة|Modern Mills|إنتاج الأغذية
+2285|المطاحن العربية|Arabian Mills for Food Products|إنتاج الأغذية
+2286|المطاحن الرابعة|Fourth Milling|إنتاج الأغذية
+2287|إنتاج (العربية للاستثمار الزراعي والصناعي)|Arabian Co. for Agricultural & Industrial Investment|إنتاج الأغذية
+2288|نفوذ للمنتجات الغذائية|Nofoth Food Products|إنتاج الأغذية
+4080|سناد القابضة|Sinad Holding|إنتاج الأغذية
+6001|حلواني إخوان|Halwani Bros|إنتاج الأغذية
+6010|نادك|NADEC|إنتاج الأغذية
+6020|جاكو (القصيم القابضة)|Al Gassim Investment Holding|إنتاج الأغذية
+6040|تبوك الزراعية|Tabuk Agricultural Development|إنتاج الأغذية
+6050|الأسماك|Saudi Fisheries|إنتاج الأغذية
+6060|الشرقية للتنمية|Ash-Sharqiyah Development|إنتاج الأغذية
+6070|الجوف الزراعية|Al-Jouf Agricultural|إنتاج الأغذية
+6090|جازادكو|Jazan Development & Investment|إنتاج الأغذية
+2140|أيان|Ayyan Investment|الرعاية الصحية
+2230|الكيميائية القابضة|Saudi Chemical Holding|الرعاية الصحية
+4002|المواساة|Mouwasat Medical Services|الرعاية الصحية
+4004|دله الصحية|Dallah Healthcare|الرعاية الصحية
+4005|رعاية|National Medical Care|الرعاية الصحية
+4007|الحمادي|Al Hammadi Holding|الرعاية الصحية
+4009|السعودي الألماني الصحية|Middle East Healthcare (Saudi German)|الرعاية الصحية
+4013|سليمان الحبيب|Dr. Sulaiman Al Habib Medical|الرعاية الصحية
+4014|دار المعدات الطبية|Scientific & Medical Equipment House|الرعاية الصحية
+4017|فقيه الطبية|Dr. Soliman Fakeeh Hospital|الرعاية الصحية
+4018|الموسى الصحية|Almoosa Health|الرعاية الصحية
+4019|التخصصي الطبية|Specialized Medical Company|الرعاية الصحية
+4021|المركز الكندي الطبي|Canadian General Medical Center|الرعاية الصحية
+2070|الدوائية (سبيماكو)|SPIMACO|الأدوية
+4015|جمجوم فارما|Jamjoom Pharmaceuticals|الأدوية
+4016|أفالون فارما (الشرق الأوسط للصناعات الدوائية)|Middle East Pharmaceutical (Avalon Pharma)|الأدوية
+1010|بنك الرياض|Riyad Bank|البنوك
+1020|بنك الجزيرة|Bank Aljazira|البنوك
+1030|الاستثمار|Saudi Investment Bank|البنوك
+1050|البنك السعودي الفرنسي|Banque Saudi Fransi|البنوك
+1060|البنك الأول (ساب)|Saudi Awwal Bank|البنوك
+1080|البنك العربي الوطني|Arab National Bank|البنوك
+1120|مصرف الراجحي|Al Rajhi Bank|البنوك
+1140|بنك البلاد|Bank Albilad|البنوك
+1150|مصرف الإنماء|Alinma Bank|البنوك
+1180|البنك الأهلي السعودي|Saudi National Bank|البنوك
+1111|مجموعة تداول|Saudi Tadawul Group|الخدمات المالية
+1182|أملاك العالمية|Amlak International Finance|الخدمات المالية
+1183|سهل للتمويل|SHL Finance|الخدمات المالية
+2120|المتطورة (الصناعات المتطورة)|Saudi Advanced Industries|الخدمات المالية
+4081|النايفات للتمويل|Nayifat Finance|الخدمات المالية
+4082|مرابحة مرنة|Morabaha Marina Financing|الخدمات المالية
+4083|تسهيل (المتحدة الدولية القابضة)|United International Holding|الخدمات المالية
+4084|دراية المالية|Derayah Financial|الخدمات المالية
+4130|درب السعودية (الباحة سابقاً)|Darb Saudi Investment|الخدمات المالية
+4280|المملكة القابضة|Kingdom Holding|الخدمات المالية
+8010|التعاونية|Tawuniya|التأمين
+8012|الجزيرة تكافل|Aljazira Takaful|التأمين
+8020|ملاذ للتأمين|Malath Insurance|التأمين
+8030|ميدغلف|MedGulf|التأمين
+8040|متكاملة للتأمين (أليانز سابقاً)|Mutakamela Insurance|التأمين
+8050|سلامة|Salama Insurance|التأمين
+8060|ولاء|Walaa Insurance|التأمين
+8070|الدرع العربي|Arabian Shield Insurance|التأمين
+8100|سايكو|SAICO|التأمين
+8120|اتحاد الخليج الأهلية|Gulf Union Alahlia|التأمين
+8150|أسيج|Allied Cooperative Insurance (ACIG)|التأمين
+8160|التأمين العربية|Arabia Insurance|التأمين
+8170|الاتحاد للتأمين|Al-Etihad Cooperative Insurance|التأمين
+8180|الصقر للتأمين|Al Sagr Insurance|التأمين
+8190|المتحدة للتأمين|United Cooperative Assurance|التأمين
+8200|الإعادة السعودية|Saudi Reinsurance|التأمين
+8210|بوبا العربية|Bupa Arabia|التأمين
+8230|تكافل الراجحي|Al Rajhi Takaful|التأمين
+8240|تشب العربية|Chubb Arabia|التأمين
+8250|جي آي جي|Gulf Insurance Group|التأمين
+8260|الخليجية العامة|Gulf General Insurance|التأمين
+8280|ليفا للتأمين|Liva Insurance|التأمين
+8300|الوطنية للتأمين|Wataniya Insurance|التأمين
+8310|أمانة للتأمين|Amana Insurance|التأمين
+8311|عناية|Saudi Enaya Insurance|التأمين
+8313|رسن|Rasan Information Technology|التأمين
+7200|إم آي إس (المعمر)|Al Moammar Information Systems|البرمجيات والخدمات
+7201|بحر العرب|Arab Sea Information Systems|البرمجيات والخدمات
+7202|حلول (سلوشنز)|Arabian Internet & Communication Services|البرمجيات والخدمات
+7203|علم|Elm|البرمجيات والخدمات
+7204|توبي (العرض المتقن)|Perfect Presentation (2P)|البرمجيات والخدمات
+7205|دار البلد|Dar AlBalad Business Solutions|البرمجيات والخدمات
+7211|عزم|Saudi Azm|البرمجيات والخدمات
+6017|جاهز|Jahez International|البرمجيات والخدمات
+7010|إس تي سي|Saudi Telecom (stc)|الاتصالات
+7020|موبايلي (اتحاد اتصالات)|Etihad Etisalat (Mobily)|الاتصالات
+7030|زين السعودية|Zain KSA|الاتصالات
+7040|جو للاتصالات (عذيب)|Etihad GO Telecom|الاتصالات
+2080|غازكو|National Gas & Industrialization|المرافق العامة
+2081|الخريف للمياه والطاقة|Alkhorayef Water & Power|المرافق العامة
+2082|أكوا باور|ACWA Power|المرافق العامة
+2083|مرافق|Marafiq|المرافق العامة
+2084|مياهنا|Miahona|المرافق العامة
+5110|السعودية للطاقة (الكهرباء سابقاً)|Saudi Energy Company (SEC)|المرافق العامة
+4020|العقارية|Saudi Real Estate|إدارة وتطوير العقارات
+4090|طيبة|Taiba Investment|إدارة وتطوير العقارات
+4100|مكة للإنشاء|Makkah Construction & Development|إدارة وتطوير العقارات
+4150|التعمير (الرياض للتعمير)|Arriyadh Development|إدارة وتطوير العقارات
+4220|إعمار المدينة الاقتصادية|Emaar Economic City|إدارة وتطوير العقارات
+4230|البحر الأحمر|Red Sea International|إدارة وتطوير العقارات
+4250|جبل عمر|Jabal Omar Development|إدارة وتطوير العقارات
+4300|دار الأركان|Dar Al Arkan|إدارة وتطوير العقارات
+4310|مدينة المعرفة|Knowledge Economic City|إدارة وتطوير العقارات
+4320|الأندلس|Alandalus Property|إدارة وتطوير العقارات
+4321|سينومي سنترز (المراكز العربية)|Arabian Centres (Cenomi Centers)|إدارة وتطوير العقارات
+4322|رتال|Retal Urban Development|إدارة وتطوير العقارات
+4323|سمو العقارية|Sumou Real Estate|إدارة وتطوير العقارات
+4324|بنان العقارية|Banan Real Estate|إدارة وتطوير العقارات
+4325|مسار (أم القرى للتنمية والإعمار)|Umm Al Qura for Development & Construction|إدارة وتطوير العقارات
+4326|دار الماجد العقارية|Dar Al Majed Real Estate|إدارة وتطوير العقارات
+4327|الرمز العقارية|Al Ramz Real Estate|إدارة وتطوير العقارات
+4328|لدن للاستثمار|Ladun Investment|إدارة وتطوير العقارات
+4330|الرياض ريت|Riyad REIT|الصناديق العقارية
+4331|الجزيرة موطن ريت|Aljazira Mawten REIT|الصناديق العقارية
+4332|جدوى ريت الحرمين|Jadwa REIT Al Haramain|الصناديق العقارية
+4333|تعليم ريت|Taleem REIT|الصناديق العقارية
+4334|المعذر ريت|Al Maather REIT|الصناديق العقارية
+4335|مشاركة ريت|Musharaka REIT|الصناديق العقارية
+4336|ملكية ريت|Mulkia Gulf REIT|الصناديق العقارية
+4337|سيكو السعودية ريت|SICO Saudi REIT|الصناديق العقارية
+4338|الأهلي ريت 1|AlAhli REIT 1|الصناديق العقارية
+4339|دراية ريت|Derayah REIT|الصناديق العقارية
+4340|الراجحي ريت|Al Rajhi REIT|الصناديق العقارية
+4342|جدوى ريت السعودية|Jadwa REIT Saudi|الصناديق العقارية
+4344|سدكو كابيتال ريت|SEDCO Capital REIT|الصناديق العقارية
+4345|الإنماء ريت للتجزئة|Alinma Retail REIT|الصناديق العقارية
+4346|ميفك ريت|MEFIC REIT|الصناديق العقارية
+4347|بنيان ريت|Bonyan REIT|الصناديق العقارية
+4348|الخبير ريت|Alkhabeer REIT|الصناديق العقارية
+4349|الإنماء ريت الفندقي|Alinma Hospitality REIT|الصناديق العقارية
+9510|الوطنية للبناء والتسويق|National Building & Marketing|نمو
+9513|وطني للحديد|Watani Iron Steel|نمو
+9514|النقول|Mohammed Hasan AlNaqool Sons|نمو
+9515|فش فاش|Fesh Fash Snack Food|نمو
+9516|توزيع الغاز الطبيعي|Natural Gas Distribution|نمو
+9517|موبي للصناعة|MOBI Industry|نمو
+9521|إنمار|INMAR|نمو
+9522|الحاسوب|Alhasoob|نمو
+9523|مجموعة الخمسة للأنابيب|Group Five Pipe Saudi|نمو
+9524|المتقدمة الدولية للاتصالات|Advance International Communication & IT|نمو
+9527|ألف ميم ياء|Alf Meem Yaa Medical Supplies|نمو
+9530|العربية الدولية للرعاية الصحية|Arabian International Healthcare Holding|نمو
+9532|مياه الجوف|Aljouf Mineral Water Bottling|نمو
+9533|مركز قطع الغيار السعودي|Saudi Parts Center|نمو
+9536|مصانع الأغذية والألبان العربية|Arabian Food & Dairy Factories|نمو
+9537|أمواج الدولية|Amwaj International|نمو
+9538|نسيج للتقنية|Naseej for Technology|نمو
+9539|أقاسيم|Aqaseem Factory for Chemicals & Plastics|نمو
+9540|تدوير (الوطنية لإعادة التدوير)|National Environmental Recycling|نمو
+9541|أكاديمية التعلم|Academy of Learning|نمو
+9542|كير الدولية|Keir International|نمو
+9543|نتوركرز السعودية|Saudi Networkers Services|نمو
+9544|فيوتشر كير|Future Care Trading|نمو
+9545|الدولية للموارد البشرية|International Human Resources|نمو
+9546|نبع الصحة|Naba Al Saha Medical|نمو
+9547|رواسي البناء|Rawasi Albina Investment|نمو
+9548|العربية للبلاستيك|Arabian Plastic Industrial|نمو
+9549|البابطين (عبدالعزيز ومنصور)|Abdulaziz & Mansour Albabtin|نمو
+9550|شور العالمية|Sure Global Tech|نمو
+9551|برج المعرفة|Knowledge Tower|نمو
+9552|سعودي توب|Saudi Top for Trading|نمو
+9553|مولان للحديد|Molan Steel|نمو
+9555|لين الخير|Leen Alkhair Trading|نمو
+9557|إدارات|Edarat Communication & IT|نمو
+9558|القمم للحاسبات|Alqemam for Computer Systems|نمو
+9559|بلدي للدواجن|Balady Poultry|نمو
+9560|وجا|Waja Company|نمو
+9561|شبكة المعرفة للحاسبات|Knowledge Net Computer|نمو
+9562|بوابة الأطعمة|Foods Gate Trading|نمو
+9563|بينا للصناعات الحديدية|BENA Steel Industries|نمو
+9564|هورايزن للأغذية|Horizon Food|نمو
+9565|معيار|Meyar Company|نمو
+9566|الجير السعودي|Saudi Lime Industries|نمو
+9567|غذاء السلطان|Ghida Al-Sultan|نمو
+9568|ميار القابضة|Mayar Holding|نمو
+9569|المنيف|AlMuneef Trade Industry Agriculture|نمو
+9570|تام للتنمية|Tam Development|نمو
+9571|منولا للشحن|Munawla Cargo|نمو
+9572|الرازي الطبية|Al-Razi Medical|نمو
+9574|الخبرات الطبية|Professional Medical Expertise|نمو
+9575|مصنع تصميم الرخام|Marble Design Factory|نمو
+9576|بيت الورق|Paper Home|نمو
+9577|دار المركبة لتأجير السيارات|Dar Almarkabah Renting Cars|نمو
+9578|أطلس للمصاعد|Atlas Elevators|نمو
+9579|رماث للضيافة|Rimath Hospitality|نمو
+9580|الراشد الصناعية|Al Rashid Industrial|نمو
+9581|كلين لايف|Clean Life|نمو
+9583|التعدين الموحد|United Mining Industries|نمو
+9584|ريال للاستثمار والتنمية|Riyal Investment & Development|نمو
+9585|ملكية للاستثمار|Mulkia Investment|نمو
+9586|أصول وبخيت|Osool & Bakheet Investment|نمو
+9587|لنا الطبية|Lana Medical|نمو
+9588|الرياض للحديد|Riyadh Steel|نمو
+9589|فاد الدولية|Fad International|نمو
+9591|فيو المتحدة|View United Real Estate|نمو
+9592|المجتمع الرائدة الطبية|Almujtama Alraida Medical|نمو
+9593|بان قلف للتسويق|Pan Gulf Marketing|نمو
+9594|المداواة الطبية|Al-Modawat Specialized Medical|نمو
+9595|وسم لتقنية المعلومات|WSM for IT|نمو
+9596|كوارا للتمويل|Quara Finance|نمو
+9597|ليف العالمية للخدمات البيئية|Leaf Global Environmental|نمو
+9598|المحافظة للتعليم|Al Mohafaza for Education|نمو
+9599|طاقات للتعدين|Taqat Mineral Trading|نمو
+9600|كومل|Qomel Company|نمو
+9601|محمد هادي الرشيد|Mohammed Hadi Al-Rasheed|نمو
+9602|يقين كابيتال|Yaqeen Capital|نمو
+9603|الأفق التعليمية|Horizon Educational|نمو
+9604|ميرال لطب الأسنان|Miral Dental|نمو
+9605|نفط الشرق للصناعات الكيميائية|Neft Alsharq Chemical|نمو
+9606|الثروة البشرية|Altharwah Albashariyyah|نمو
+9607|مصنع إيه إس جي للبلاستيك|ASG Plastic Factory|نمو
+9608|الأشغال الميسرة|Al Ashghal Al Moysra|نمو
+9609|ناس للبترول|Nass Petrol Factory|نمو
+9610|الجادة الأولى|First Avenue Real Estate|نمو
+9611|الزجاج العائم المتحدة|Arabian United Float Glass|نمو
+9612|سما للمياه الصحية|SAMA Healthy Water|نمو
+9613|شلفا للمرافق|Shalfa Facilities Management|نمو
+9614|بيورتي لتقنية المعلومات|Purity for IT|نمو
+9615|مفيد|Mufeed Company|نمو
+9616|جنى الطبية|Jana Medical|نمو
+9617|نجمة أرابيكا|Arabica Star|نمو
+9618|الفاخرة للخياطة الرجالية|Al-Fakhera Men's Tailoring|نمو
+9619|مجموعة الأعمال المتعددة|Multi Business Group|نمو
+9620|بلسم الأفق الطبية|Balsm Alofoq Medical|نمو
+9621|البحوث الرقمية|Digital Research|نمو
+9622|شموخ الماضي|Shmoh Almadi|نمو
+9623|البطال للصناعات الكيميائية|Al Battal Chemical Industries|نمو
+9624|الشهيلي للصناعات المعدنية|Alshehili Metal Industries|نمو
+9625|إتمام للاستشارات|Itmam Consultancy|نمو
+9626|بسمة أديم الطبية|Basma Adeem Medical|نمو
+9627|تواريت للرعاية الطبية|Twareat Medical Care|نمو
+9628|لمسات|Lamasat Company|نمو
+9630|ريشيو التخصصية|Ratio Speciality Trading|نمو
+9631|هدب الخليج|Hedab Alkhaleej Trading|نمو
+9632|رؤية المستقبل للتدريب الصحي|Future Vision Health Training|نمو
+9633|معدات الخدمة|Service Equipment Co.|نمو
+9634|أدير العقارية|Adeer Real Estate|نمو
+9635|دخون الوطنية|Dkhoun National Trading|نمو
+9636|الخزامى التجارية|Al Kuzama Trading|نمو
+9637|أكسيليريتد للحلول|Axelerated Solutions ICT|نمو
+9639|أنماط التقنية|Anmat Technology|نمو
+9640|أساس مكين العقارية|ASAS Makeen Real Estate|نمو
+9641|هوية للمزادات|Hawyia Auctions|نمو
+9642|تايم للترفيه|Time Entertainment|نمو
+9644|ناف للأعلاف|Naf Feed Industry|نمو
+9645|اللوحات الوطنية الصناعية|National Signage Industrial|نمو
+9647|وجد الحياة التجارية|Wajd Life Trading|نمو
+9648|حمد بن سعيدان العقارية|Hamad Bin Saedan Real Estate|نمو
+9649|جمجوم للأزياء|Jamjoom Fashion Trading|نمو
+9650|ساحات المجد|Sahat Almajd Trading|نمو
+9651|عبدالعزيز التويجري التجارية|Abdul Aziz Al-Tuwaijri Trading|نمو
+9653|خالد ظافر وإخوانه للخدمات اللوجستية|Khaled Dhafer & Brothers Logistics|نمو
+9655|مسجا للاستثمار|MSGA Investment|نمو
+`;
+'use strict';
+/* ========= utilities ========= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+};
+const AR_DIG = '٠١٢٣٤٥٦٧٨٩';
+function parseNum(v) {
+  if (v === null || v === undefined) return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim();
+  if (!s) return NaN;
+  s = s.replace(/[٠-٩]/g, d => AR_DIG.indexOf(d)).replace(/٫/g, '.').replace(/[,،\s]/g, '').replace(/ريال|sar/ig, '');
+  let mult = 1;
+  const m = s.match(/(مليار|بليون|مليون|ألف|الف|bn|b|m|k|%)$/i);
+  if (m) {
+    mult = { 'مليار': 1e9, 'بليون': 1e9, 'bn': 1e9, 'b': 1e9, 'مليون': 1e6, 'm': 1e6, 'ألف': 1e3, 'الف': 1e3, 'k': 1e3, '%': 1 }[m[1].toLowerCase()];
+    s = s.slice(0, -m[1].length);
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : n * mult;
+}
+const num = v => parseNum(v);
+const has = v => !isNaN(parseNum(v));
+const nz = v => { const n = parseNum(v); return isNaN(n) ? 0 : n; };
+function arr(s) {
+  if (Array.isArray(s)) return s.map(parseNum).filter(n => !isNaN(n));
+  if (!s) return [];
+  return String(s).split(/[,،;\n|]+|\s{1,}(?=[-\d٠-٩])/).map(x => parseNum(x)).filter(n => !isNaN(n));
+}
+function fmt(n, d = 2) {
+  if (n === null || n === undefined || isNaN(n) || !isFinite(n)) return '—';
+  return '\u2066' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: d }) + '\u2069';
+}
+const fmtRaw = (n, d = 2) => (n === null || n === undefined || isNaN(n) || !isFinite(n)) ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: d });
+function money(n, d = 2) {
+  if (n === null || n === undefined || isNaN(n) || !isFinite(n)) return '—';
+  const a = Math.abs(n);
+  if (a >= 1e9) return fmt(n / 1e9, d) + ' مليار';
+  if (a >= 1e6) return fmt(n / 1e6, d) + ' مليون';
+  if (a >= 1e4) return fmt(n / 1e3, d) + ' ألف';
+  return fmt(n, d);
+}
+const rng = (a, b) => '\u2066' + fmtRaw(a) + ' – ' + fmtRaw(b) + '\u2069';
+const pct = (n, d = 1) => (isNaN(n) || !isFinite(n)) ? '—' : '\u2066' + fmtRaw(n, d) + '%\u2069';
+const sar = (n, d = 2) => (isNaN(n) || !isFinite(n)) ? '—' : fmt(n, d) + ' ﷼';
+const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
+const sum = a => a.reduce((x, y) => x + y, 0);
+const median = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const cv = a => { if (a.length < 2) return NaN; const m = avg(a); if (!m) return NaN; const sd = Math.sqrt(avg(a.map(x => (x - m) ** 2))); return Math.abs(sd / m); };
+function getPath(o, p) { return p.split('.').reduce((x, k) => (x == null ? undefined : x[k]), o); }
+function setPath(o, p, v) { const ks = p.split('.'); let x = o; ks.slice(0, -1).forEach((k, i) => { if (x[k] == null || typeof x[k] !== 'object') x[k] = /^\d+$/.test(ks[i + 1]) ? [] : {}; x = x[k]; }); x[ks[ks.length - 1]] = v; }
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2600); }
+function askConfirm(msg) { return new Promise(res => { $('#confirmMsg').textContent = msg; $('#confirm').hidden = false; const done = v => { $('#confirm').hidden = true; res(v); }; $('#confirmYes').onclick = () => done(true); $('#confirmNo').onclick = () => done(false); }); }
+const chip = (txt, cls = '') => `<span class="chip ${cls}">${esc(txt)}</span>`;
+
+/* ========= growth engine — p.67 =========
+   growth% = (year − previous year) / previous year × 100 ; average them ; chain onto the last realized year */
+function growthSeries(vals) {
+  const g = [];
+  for (let i = 1; i < vals.length; i++) if (vals[i - 1]) g.push((vals[i] - vals[i - 1]) / Math.abs(vals[i - 1]) * 100);
+  return g;
+}
+function avgGrowth(vals) { const g = growthSeries(vals); return g.length ? avg(g) : NaN; }
+function project(vals, years, gOverride) {
+  const g = isNaN(gOverride) || gOverride === undefined ? avgGrowth(vals) : gOverride;
+  const out = []; let last = vals[vals.length - 1];
+  for (let i = 0; i < years; i++) { last = last * (1 + (isNaN(g) ? 0 : g) / 100); out.push(last); }
+  return { g, out };
+}
+
+/* ========= state ========= */
+const LS_DATA = 'mizan.companies.v1', LS_SET = 'mizan.settings.v1', LS_UI = 'mizan.ui.v1';
+function newProduct(o = {}) { return Object.assign({ id: uid(), name: '', ms: '', hist: '', gms: '', share: '', gsh: '', margin: '', gmg: '' }, o); }
+function newCompany(name) {
+  return {
+    id: uid(), name: name || 'شركة جديدة', symbol: '', sector: '', price: '', shares: '', nominal: '10', founded: '', capital: '', sectorAvgCapital: '',
+    activity: '', sharia: 'unknown', multiplier: '15', margin: '', invest: '', ginv: '', projYears: '1', priceGrowth: '', entryPrice: '',
+    products: [newProduct()], peers: [],
+    hist: { years: '', revenue: '', netIncome: '', otherIncome: '', equity: '', dps: '' },
+    capIncreases: '', q: { net: '', other: '' },
+    equity: '', totalAssets: '', liabilities: '', netIncome: '', otherIncome: '',
+    deep: {}, ind: {}, implicit: {}, ai: {}, notes: '', example: false, updated: Date.now()
+  };
+}
+function exampleCompany() {
+  const c = newCompany('شركة مثال الكتاب (بيانات توضيحية)');
+  Object.assign(c, {
+    example: true, symbol: '0000', sector: 'مثال', price: '13.20', shares: '500 مليون', capital: '5 مليار', sectorAvgCapital: '4 مليار', founded: '2009', activity: 'دفاعية', sharia: 'ok',
+    margin: '50', invest: '20 مليون', ginv: '5', projYears: '1', priceGrowth: '4', entryPrice: '12.50',
+    equity: '6.4 مليار', totalAssets: '9.1 مليار', liabilities: '2.7 مليار', netIncome: '520 مليون', otherIncome: '18 مليون', capIncreases: '0',
+    products: [
+      newProduct({ name: 'المنتج الرئيسي (مثال ص211: حجم سوق 4 مليار × حصة 25% × هامش 50%)', ms: '4 مليار', hist: '3.3 مليار, 3.5 مليار, 3.7 مليار, 3.85 مليار, 4 مليار', share: '25', gsh: '', margin: '', gmg: '' })
+    ],
+    peers: [
+      { id: uid(), name: 'شركة عوائد أ (مثال)', price: '31.40', eps: '2.15' },
+      { id: uid(), name: 'شركة عوائد ب (مثال)', price: '47.80', eps: '3.30' },
+      { id: uid(), name: 'شركة عوائد ج (مثال)', price: '22.10', eps: '1.62' },
+      { id: uid(), name: 'شركة عوائد د (مثال)', price: '64.00', eps: '4.40' }
+    ],
+    hist: { years: '2021, 2022, 2023, 2024, 2025', revenue: '780 مليون, 840 مليون, 900 مليون, 955 مليون, 1000 مليون', netIncome: '400 مليون, 430 مليون, 462 مليون, 495 مليون, 520 مليون', otherIncome: '15 مليون, 12 مليون, 20 مليون, 16 مليون, 18 مليون', equity: '5.2 مليار, 5.5 مليار, 5.8 مليار, 6.1 مليار, 6.4 مليار', dps: '0.50, 0.55, 0.55, 0.60, 0.65' },
+    q: { net: '118 مليون, 126 مليون, 131 مليون, 145 مليون', other: '4 مليون, 5 مليون, 4 مليون, 5 مليون' }
+  });
+  return c;
+}
+let DB = store.get(LS_DATA, null);
+if (!DB || !Array.isArray(DB.companies) || !DB.companies.length) { const ex = exampleCompany(); DB = { companies: [ex], current: ex.id, deals: [], schedule: {} }; }
+DB.deals = DB.deals || []; DB.schedule = DB.schedule || {};
+let SET = Object.assign({
+  keys: { claude: '', openai: '', gemini: '' },
+  models: { claude: 'claude-opus-5-5', openai: 'gpt-5.5', gemini: 'gemini-3.8-pro' },
+  enabled: { claude: true, openai: true, gemini: true }, search: true, autoAdopt: 'median', valYear: '', liquidity: '', growthConfirmed: false, investChecks: {}
+}, store.get(LS_SET, {}));
+SET.keys = Object.assign({ claude: '', openai: '', gemini: '' }, SET.keys);
+SET.models = Object.assign({ claude: 'claude-opus-5-5', openai: 'gpt-5.5', gemini: 'gemini-3.8-pro' }, SET.models);
+SET.enabled = Object.assign({ claude: true, openai: true, gemini: true }, SET.enabled);
+const cur = () => DB.companies.find(c => c.id === DB.current) || DB.companies[0];
+let saveT;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { const c = cur(); if (c) c.updated = Date.now(); store.set(LS_DATA, DB); }, 250); }
+function saveSet() { store.set(LS_SET, SET); }
+
+/* ========= ENGINE 1 — revised narrative equation (p.68, the user's image) =========
+   1 products → 2 market size per product → 3 company share per product → 4 profit margin
+   5 Σ(market size × share) → 6 × margin → 7 + investment returns → 8 ÷ shares → 9 × 15 → 10 fair value
+   11 expected data: growth patterns applied to the three variables (p.67) */
+function productGrowth(p) {
+  if (has(p.gms)) return num(p.gms);
+  const h = arr(p.hist);
+  return h.length >= 2 ? avgGrowth(h) : 0;
+}
+function revised(c, nOverride) {
+  const n = nOverride !== undefined ? nOverride : Math.max(0, Math.round(nz(c.projYears)));
+  const mult = has(c.multiplier) ? num(c.multiplier) : 15;
+  const shares = num(c.shares);
+  const rows = (c.products || []).map(p => {
+    const g1 = productGrowth(p), g2 = nz(p.gsh), g3 = nz(p.gmg);
+    const ms0 = num(p.ms), sh0 = num(p.share), mg0 = has(p.margin) ? num(p.margin) : num(c.margin);
+    const ms = ms0 * Math.pow(1 + g1 / 100, n);
+    const sh = Math.min(100, sh0 * Math.pow(1 + g2 / 100, n));
+    const mg = Math.min(100, mg0 * Math.pow(1 + g3 / 100, n));
+    const rev = ms * sh / 100, prof = rev * mg / 100;
+    return { p, n, g1, g2, g3, ms, sh, mg, rev, prof, ownMargin: has(p.margin), ok: !isNaN(rev) && !isNaN(prof) };
+  });
+  const valid = rows.filter(r => r.ok);
+  const totalMS = sum(valid.map(r => r.ms));
+  const totalRev = sum(valid.map(r => r.rev));
+  const totalProf = sum(valid.map(r => r.prof));
+  const blendedMargin = totalRev ? totalProf / totalRev * 100 : NaN;
+  const inv = nz(c.invest) * Math.pow(1 + nz(c.ginv) / 100, n);
+  const net = totalProf + inv;
+  const eps = shares ? net / shares : NaN;
+  const fv = eps * mult;
+  return { n, mult, rows, valid, totalMS, totalRev, totalProf, blendedMargin, inv, net, shares, eps, fv, complete: valid.length > 0 && !isNaN(eps) };
+}
+function fvPath(c, years = 5) { const out = []; for (let n = 0; n <= years; n++) out.push(revised(c, n).fv); return out; }
+
+/* ========= ENGINE 2 — mother equation (p.16–17, p.60, p.65)
+   FV = A × B ; A = Σ(price ÷ EPS of fixed-dividend companies) ÷ count ; B = final continuous EPS
+   valuation range (p.12) = highest P/E − lowest P/E of dividend companies */
+function mother(c, eps) {
+  const pes = (c.peers || []).map(p => ({ p, pe: num(p.price) / num(p.eps) })).filter(x => isFinite(x.pe) && x.pe > 0);
+  const vals = pes.map(x => x.pe);
+  const A = avg(vals), lo = Math.min(...vals), hi = Math.max(...vals);
+  return { pes, A, lo: vals.length ? lo : NaN, hi: vals.length ? hi : NaN, range: vals.length ? hi - lo : NaN, fv: A * eps, fvLo: lo * eps, fvHi: hi * eps };
+}
+
+/* ========= ENGINE 3 — classification (p.20, p.24–38) ========= */
+const CLASS_INFO = {
+  full: { t: 'تحول كلي (خاسرة من رأس المال)', cls: 'down', page: 'ص26–27', d: 'مخاطرة مرتفعة واحتمالية إفلاس، ومقابلها احتمالية مضاعفة رأس المال إن تحولت للربح.' },
+  partial: { t: 'تحول جزئي (خاسرة لآخر سنة)', cls: 'down', page: 'ص28–29', d: 'انخفاض الإيرادات التشغيلية عن المصروفات لمدة سنة.' },
+  shrink: { t: 'تحول جزئي (منكمشة)', cls: 'warn', page: 'ص30', d: 'انخفاض الإيرادات التشغيلية عن السابقة لمدة سنة.' },
+  growth: { t: 'نمو', cls: 'up', page: 'ص31–32', d: 'نمو مستمر في حقوق المساهمين والمبيعات، أو زيادات متكررة في رأس المال.' },
+  dividend: { t: 'نضج وعوائد', cls: 'info', page: 'ص33', d: 'ثبات نسبي في الأرباح وتوزيعات مستمرة لا تنقطع.' },
+  cyclical: { t: 'دورية', cls: 'warn', page: 'ص34', d: 'تقلب في الأرباح وعدم استمرار النمو أو الخسائر.' }
+};
+function classify(c) {
+  const tests = [];
+  const T = (key, name, pass, detail, page, known = true) => tests.push({ key, name, pass, detail, page, known });
+  const eq = num(c.equity), sh = num(c.shares), nom = has(c.nominal) ? num(c.nominal) : 10, cap = num(c.capital);
+  // full turnaround — equity ÷ capital, book value vs nominal value
+  if (!isNaN(eq) && sh) {
+    const bv = eq / sh, ratio = cap ? eq / cap : NaN;
+    T('full', 'خاسرة من رأس المال', bv < nom || eq < 0, `القيمة الدفترية ${fmt(bv)} مقابل الاسمية ${fmt(nom)}${isNaN(ratio) ? '' : ` · حقوق المساهمين ÷ رأس المال = ${fmt(ratio, 2)}`}`, 'ص26–27');
+  } else T('full', 'خاسرة من رأس المال', false, 'أدخل حقوق المساهمين وعدد الأسهم', 'ص26–27', false);
+  // partial — net income − other revenues < 0
+  const ni = num(c.netIncome), oi = nz(c.otherIncome);
+  if (!isNaN(ni)) { const op = ni - oi; T('partial', 'خاسرة لآخر سنة', op < 0, `صافي الدخل − الإيرادات الأخرى = ${money(op)}`, 'ص28–29'); }
+  else T('partial', 'خاسرة لآخر سنة', false, 'أدخل صافي الدخل والإيرادات الأخرى لآخر سنة', 'ص28–29', false);
+  // shrinking — four past quarters of operating income, each quarter minus the previous
+  const qn = arr(c.q && c.q.net), qo = arr(c.q && c.q.other);
+  if (qn.length >= 2) {
+    const ops = qn.map((v, i) => v - (qo[i] || 0)); const diffs = ops.slice(1).map((v, i) => v - ops[i]);
+    const neg = diffs.filter(d => d < 0).length; const shrinking = ops[ops.length - 1] < ops[0] && neg >= diffs.length / 2;
+    T('shrink', 'منكمشة (4 أرباع)', shrinking, `فروق الأرباع التشغيلية: ${diffs.map(d => money(d, 1)).join(' ، ')}`, 'ص30');
+  } else T('shrink', 'منكمشة (4 أرباع)', false, 'أدخل صافي الدخل والإيرادات الأخرى لأربعة أرباع', 'ص30', false);
+  // growth — equity and sales increasing continuously, or several capital increases
+  const he = arr(c.hist.equity), hr = arr(c.hist.revenue);
+  const inc = a => a.length >= 2 && a.every((v, i) => i === 0 || v > a[i - 1]);
+  const capInc = nz(c.capIncreases);
+  if (he.length >= 2 || hr.length >= 2 || has(c.capIncreases)) {
+    const g = (inc(he) && inc(hr)) || capInc >= 2;
+    T('growth', 'شركة نمو', g, `حقوق المساهمين ${inc(he) ? 'في ازدياد مستمر' : 'غير مستمرة النمو'} · المبيعات ${inc(hr) ? 'في ازدياد مستمر' : 'غير مستمرة النمو'} · زيادات رأس المال: ${fmt(capInc, 0)}`, 'ص31–32');
+  } else T('growth', 'شركة نمو', false, 'أدخل تاريخ حقوق المساهمين والمبيعات', 'ص31–32', false);
+  // dividend — continuous distributions + relative stability of profit
+  const dps = arr(c.hist.dps), hn = arr(c.hist.netIncome);
+  if (dps.length >= 2) {
+    const cont = dps.every(d => d > 0); const stab = cv(hn);
+    T('dividend', 'شركة عوائد', cont && (isNaN(stab) || stab < 0.2), `توزيعات ${cont ? 'مستمرة' : 'منقطعة'} · تذبذب الأرباح ${isNaN(stab) ? '—' : pct(stab * 100)}`, 'ص33');
+  } else T('dividend', 'شركة عوائد', false, 'أدخل توزيعات السهم للسنوات الماضية', 'ص33', false);
+  // cyclical — fluctuating profit, no continuous growth or loss
+  if (hn.length >= 3) {
+    const gs = growthSeries(hn); const signs = gs.map(Math.sign); const flips = signs.slice(1).filter((s, i) => s && signs[i] && s !== signs[i]).length;
+    T('cyclical', 'شركة دورية', flips >= 1 && !inc(hn), `تغيّر اتجاه الأرباح ${flips} مرة`, 'ص34');
+  } else T('cyclical', 'شركة دورية', false, 'أدخل صافي الدخل لثلاث سنوات على الأقل', 'ص34', false);
+  const pass = k => tests.find(t => t.key === k && t.pass);
+  const order = ['full', 'partial', 'shrink', 'growth', 'dividend', 'cyclical'];
+  const primary = order.find(k => pass(k)) || null;
+  // history (p.35), size (p.36), activity (p.37–38), sharia (p.24–25)
+  const yr = new Date().getFullYear(); const fy = num(c.founded);
+  const history = isNaN(fy) ? null : (yr - fy < 10 ? 'حديثة (أقل من 10 سنوات)' : 'تاريخية (10 سنوات فأكثر)');
+  let size = null; const sa = num(c.sectorAvgCapital);
+  if (cap && sa) { const r = cap / sa; size = r < 0.5 ? 'صغيرة' : r <= 1.5 ? 'متوسطة' : 'كبيرة'; }
+  return { tests, primary, info: primary ? CLASS_INFO[primary] : null, history, size, activity: c.activity || null, sharia: c.sharia };
+}
+
+/* ========= ENGINE 4 — trading memo (p.209) + method 3 (p.12) ========= */
+function signal(c, R, cl) {
+  const price = num(c.price), fv = R.fv;
+  if (isNaN(price) || isNaN(fv)) return { s: 'hold', label: '—', why: 'أدخل السعر والبيانات لحساب القيمة العادلة.' };
+  const disc = (fv - price) / fv * 100;
+  const fvNow = revised(c, 0).fv, fvNext = revised(c, Math.max(1, R.n)).fv;
+  const fvG = (fvNext - fvNow) / Math.abs(fvNow) * 100 / Math.max(1, R.n);
+  const pg = num(c.priceGrowth); const entry = num(c.entryPrice);
+  const k = cl.primary;
+  if (k === 'shrink' && fvG < 0) return { s: 'sell', label: 'بيع', why: 'شركة انكماش + قيمة عادلة تتناقص حسب البيانات المتوقعة.', rule: 'مذكرة التداول ص209' };
+  if (k === 'growth' || k === 'partial' && fvG > 0) {
+    if (!isNaN(pg)) {
+      if (pg > fvG + 1) return { s: 'sell', label: 'بيع', why: `شركة نمو + السعر ينمو (${pct(pg)}) بأكثر من نمو القيمة العادلة (${pct(fvG)}).`, rule: 'مذكرة التداول ص209' };
+      return { s: 'buy', label: 'شراء', why: `شركة نمو + السعر ينمو (${pct(pg)}) بوتيرة لا تتجاوز نمو القيمة العادلة (${pct(fvG)}).`, rule: 'مذكرة التداول ص209' };
+    }
+  }
+  if (k === 'dividend' || k === null || k === 'cyclical' || k === 'growth') {
+    if (price <= fv * 0.75) return { s: 'buy', label: 'شراء', why: `السعر أقل من القيمة العادلة بـ ${pct(disc)} (الشرط 25% فأكثر).`, rule: 'مذكرة التداول ص209 · الطريقة الثالثة ص12' };
+    if (!isNaN(entry) && price <= entry * 0.75) return { s: 'buy', label: 'تعزيز', why: `السعر أقل من متوسط شرائك (${fmt(entry)}) بـ 25% فأكثر.`, rule: 'مذكرة التداول ص209' };
+    if (price >= fv * 1.10) return { s: 'sell', label: 'بيع', why: `السعر أعلى من القيمة العادلة بـ ${pct(-disc)} (الشرط 10% فأكثر).`, rule: 'مذكرة التداول ص209' };
+  }
+  if (k === 'full' || k === 'partial') return { s: 'hold', label: 'حذر', why: 'شركة تحول: تُقيَّم في ظروف الخسارة بالقيمة الدفترية (ص14)، ومخاطرة مرتفعة.', rule: 'ص14، ص26–29' };
+  return { s: 'hold', label: 'انتظار', why: disc >= 0 ? `السعر دون القيمة العادلة بـ ${pct(disc)}؛ لم يبلغ هامش الأمان 25%.` : `السعر فوق القيمة العادلة بـ ${pct(-disc)}؛ لم يبلغ حد البيع 10%.`, rule: 'مذكرة التداول ص209' };
+}
+
+/* ========= deep calculators — every computed relation in chapters 1–2 =========
+   o(label, value, kind, status, note) ; kind: money|pct|num|sar|text ; status: up|down|warn|info|'' */
+const o = (l, v, kind = 'num', st = '', note = '') => ({ l, v, kind, st, note });
+const good = (cond, a = 'up', b = 'down') => cond === null || cond === undefined ? '' : (cond ? a : b);
+const ratio = (a, b) => (has(a) && has(b) && num(b)) ? num(a) / num(b) * 100 : NaN;
+
+const CALCS = [
+  /* ---------- chapter 1 — confirming classification & valuation ---------- */
+  { grp: 'ch1', id: 'opProfit', t: 'الأرباح والخسائر التشغيلية وربحية السهم التشغيلية', page: 'ص42، ص65',
+    f: 'الربح التشغيلي = صافي الدخل − الإيرادات الأخرى ؛ ربحية السهم = الربح التشغيلي ÷ عدد الأسهم',
+    in: [['ni', 'صافي الدخل'], ['oi', 'الإيرادات الأخرى'], ['sh', 'عدد الأسهم']],
+    run: v => { const op = num(v.ni) - nz(v.oi); const eps = op / num(v.sh); return [o('الربح/الخسارة التشغيلية', op, 'money', good(op >= 0)), o('ربحية السهم التشغيلية', eps, 'sar', good(eps >= 0))]; } },
+  { grp: 'ch1', id: 'capab', t: 'القدرات العامة للشركة', page: 'ص50–51',
+    f: 'المركز المالي = حقوق المساهمين ÷ كامل الموجودات ؛ الطاقة المستخدمة ÷ القصوى ؛ الحالية ÷ المستقبلية ؛ السيولة ÷ كامل رأس المال',
+    in: [['ta', 'كامل الموجودات'], ['li', 'المطلوبات'], ['used', 'الطاقة المستخدمة'], ['max', 'الطاقة القصوى'], ['curr', 'الطاقة الحالية'], ['fut', 'الطاقة المستقبلية (بعد المشاريع)'], ['cash', 'السيولة النقدية'], ['cap', 'كامل رأس المال']],
+    run: v => { const eq = num(v.ta) - nz(v.li); return [
+      o('حقوق المساهمين', eq, 'money', good(eq > 0)), o('حقوق المساهمين من كامل الموجودات', ratio(eq, v.ta), 'pct', good(ratio(eq, v.ta) >= 50, 'up', 'warn')),
+      o('الطاقة المستخدمة من القصوى', ratio(v.used, v.max), 'pct', '', 'كلما اقتربت من 100% ضاقت مساحة النمو إلا بالتوسعة أو رفع السعر (ص121)'),
+      o('الطاقة الحالية من المستقبلية', ratio(v.curr, v.fut), 'pct', '', 'كلما انخفضت دلّ على توسعة قادمة في الإنتاج'),
+      o('السيولة في كامل رأس المال', ratio(v.cash, v.cap), 'pct')]; } },
+  { grp: 'ch1', id: 'prodEval', t: 'تقييم المنتج — مؤشرات الجودة والكفاءة', page: 'ص48',
+    f: 'السعر ÷ عدد نقاط التقييم (كلما قلّ دلّ على رخصه) ؛ المتبقي من الجهد/الوقت = 1 − (جهد المنتج ÷ متوسط المنتجات)',
+    in: [['need', 'نسبة إشباع الحاجة لمنتج الشركة %'], ['needC', 'نسبة إشباع الحاجة للمنافس %'], ['needs', 'عدد الاحتياجات المقضية'], ['life', 'العمر الافتراضي بالأيام'], ['price', 'سعر منتج الشركة'], ['pts', 'نقاط تقييم منتج الشركة'], ['priceC', 'سعر منتج المنافس'], ['ptsC', 'نقاط تقييم المنافس'], ['eff', 'جهد استخدام المنتج'], ['effAvg', 'متوسط جهد المنتجات'], ['time', 'وقت استخدام المنتج'], ['timeAvg', 'متوسط وقت المنتجات']],
+    run: v => { const ppp = num(v.price) / num(v.pts), pppC = num(v.priceC) / num(v.ptsC); const effR = (1 - num(v.eff) / num(v.effAvg)) * 100, timeR = (1 - num(v.time) / num(v.timeAvg)) * 100; return [
+      o('إشباع الحاجة مقارنة بالمنافس', num(v.need) - num(v.needC), 'pct', good(num(v.need) >= num(v.needC))),
+      o('الاحتياجات المقضية لكل يوم من العمر', num(v.needs) / num(v.life), 'num'),
+      o('السعر مقابل النقاط (الشركة)', ppp, 'num', good(isNaN(pppC) ? null : ppp <= pppC)), o('السعر مقابل النقاط (المنافس)', pppC, 'num'),
+      o('مقدار الجهد المتبقي', effR, 'pct', good(effR >= 0), 'كلما زاد المتبقي كان إيجابياً'), o('مقدار الوقت المتبقي', timeR, 'pct', good(timeR >= 0))]; } },
+  { grp: 'ch1', id: 'growth', t: 'متوسط نسبة النمو وتقدير السنوات القادمة', page: 'ص67',
+    f: 'النمو = (سنة − السنة التي قبلها) ÷ السنة التي قبلها × 100 ؛ المتوسط = مجموع النواتج ÷ عددها ؛ يضاف على آخر سنة محققة ثم التي بعدها',
+    in: [['vals', 'قيم السنوات المحققة (الأقدم أولاً)', 'wide'], ['yrs', 'عدد السنوات المتوقعة']],
+    run: v => { const a = arr(v.vals); const g = growthSeries(a); const p = project(a, Math.max(1, nz(v.yrs) || 3)); return [
+      o('نسب النمو السنوية', g.map(x => pct(x)).join(' ، ') || '—', 'text'), o('متوسط نسبة النمو', p.g, 'pct', good(p.g >= 0)),
+      ...p.out.map((x, i) => o(`السنة المتوقعة +${i + 1}`, x, 'money'))]; } },
+
+  /* ---------- chapter 2 / part 1 — market size ---------- */
+  { grp: 'ms', id: 'msGap', t: 'الحجم الكلي والفعلي للسوق وزمن الوصول', page: 'ص73–75',
+    f: 'الفجوة = الحجم الكلي − الفعلي ؛ زمن وصول الفعلي للكلي = ln(الكلي ÷ الفعلي) ÷ ln((1+نمو الفعلي) ÷ (1+نمو الكلي))',
+    note: 'نص الكتاب في ص74 سقطت منه كلمة بعد «قسمة الفرق بينهما على»، فاعتمد التطبيق الصيغة الرياضية التي تحقق الغرض نفسه: معرفة وقت تباطؤ نمو الإيرادات.',
+    in: [['tot', 'الحجم الكلي للسوق'], ['act', 'الحجم الفعلي للسوق'], ['gt', 'نمو الحجم الكلي %'], ['ga', 'نمو الحجم الفعلي %'], ['gr', 'نمو إيرادات الشركة %']],
+    run: v => { const T = num(v.tot), A = num(v.act), gt = nz(v.gt), ga = nz(v.ga), gr = num(v.gr); const yrs = ga > gt ? Math.log(T / A) / Math.log((1 + ga / 100) / (1 + gt / 100)) : NaN;
+      return [o('الفجوة بين الكلي والفعلي', T - A, 'money', good(T - A > 0), 'كلما اتسع الفرق دلّ على احتمالية نمو أقوى للإيرادات'), o('الفعلي من الكلي', A / T * 100, 'pct'),
+        o('السنوات المقدرة لبلوغ الفعلي الكلي', yrs, 'num', isNaN(yrs) ? 'warn' : '', isNaN(yrs) ? 'نمو الفعلي لا يتجاوز نمو الكلي، فلن يبلغه بهذا النمط' : 'بعدها يتوقع تباطؤ نمو إيرادات الشركة من المنتج'),
+        o('نمو الإيرادات مقابل نمو السوق', isNaN(gr) ? '—' : (gr > Math.max(gt, ga) ? 'أعلى: اتساع الحصة واحترافية الإدارة' : gr < Math.min(gt, ga) ? 'أقل: انخفاض الحصة وسوء في الإدارة' : 'مماثل لنمو السوق'), 'text', isNaN(gr) ? '' : good(gr >= Math.min(gt, ga))),
+        o('نمو الحجم الكلي', gt, 'pct', good(gt > 0), 'كلما زاد دلّ على سوق واعدة')]; } },
+  { grp: 'ms', id: 'customers', t: 'العملاء ومتوسط الدخل وتكلفة المعيشة', page: 'ص79–83، ص18',
+    f: 'متوسط الدخل = الناتج المحلي ÷ عدد السكان ؛ العميل مؤهل إذا (تكاليف السلع الأكثر أهمية + حصته السنوية من المنتج) < متوسط دخله ؛ حجم السوق الفعلي = عدد العملاء × مقدار الحصة السنوية',
+    in: [['gdp', 'الناتج المحلي'], ['pop', 'عدد السكان'], ['living', 'تكلفة المعيشة السنوية للفرد'], ['shareAmt', 'حصة العميل السنوية من المنتج (ريال)'], ['custTot', 'العملاء الكلي (محتاج وقادر)'], ['custAct', 'العملاء الفعلي'], ['custPot', 'العملاء المحتملون'], ['repeat', 'العملاء المكررون للشراء']],
+    run: v => { const inc = num(v.gdp) / num(v.pop); const surplus = inc - num(v.living); const ok = num(v.living) + num(v.shareAmt) < inc; return [
+      o('متوسط دخل الفرد', inc, 'money'), o('تكلفة المعيشة من الدخل', num(v.living) / inc * 100, 'pct', '', 'علاقة عكسية: كلما انخفضت كان إيجابياً (ص88)'),
+      o('الفائض المالي للعميل', surplus, 'money'), o('أهلية العميل للشراء', has(v.shareAmt) && !isNaN(inc) ? (ok ? 'مؤهل' : 'غير مؤهل') : '—', 'text', has(v.shareAmt) ? good(ok) : ''),
+      o('نسبة سعر الحصة في فائض العميل', num(v.shareAmt) / surplus * 100, 'pct', '', 'علاقة عكسية: كلما انخفضت ضمنت استمرار الطلب (ص100)'),
+      o('حجم السوق الكلي (العملاء الكلي × الحصة)', num(v.custTot) * num(v.shareAmt), 'money'), o('حجم السوق الفعلي (العملاء الفعلي × الحصة)', num(v.custAct) * num(v.shareAmt), 'money'),
+      o('الفجوة بين العملاء الكلي والفعلي', num(v.custTot) - num(v.custAct), 'num', good(num(v.custTot) > num(v.custAct)), 'كلما اتسع الفرق ارتفعت نسبة نمو العدد الفعلي'),
+      o('نسبة العملاء المكررين', ratio(v.repeat, v.custAct), 'pct'), o('العملاء المحتملون من الكلي', ratio(v.custPot, v.custTot), 'pct', '', 'تتابَع أسباب تحولهم المالية أو التواصلية')]; } },
+  { grp: 'ms', id: 'custShare', t: 'حصة العميل وكمية الاستهلاك', page: 'ص91–92',
+    f: 'الحصة السنوية = عدد المنتجات السنوي (بالكسور) × سعر المنتج ؛ الاستهلاك الفعلي = المنتجات المباعة ÷ العملاء الفعليين',
+    in: [['units', 'عدد المنتجات السنوي للعميل (0.5 = كل سنتين)'], ['price', 'سعر المنتج الواحد'], ['need', 'الاحتياج الفعلي (وحدة/سنة)'], ['sold', 'المنتجات المباعة'], ['cust', 'العملاء الفعليون']],
+    run: v => { const cons = num(v.sold) / num(v.cust); const need = num(v.need); const st = isNaN(cons) || isNaN(need) ? '' : (Math.abs(cons - need) / need < 0.05 ? 'info' : cons > need ? 'down' : 'up'); return [
+      o('مقدار الحصة السنوية (ريال)', num(v.units) * num(v.price), 'money'), o('كمية الاستهلاك الفعلية لكل عميل', cons, 'num'),
+      o('الاستهلاك مقابل الاحتياج', st === '' ? '—' : st === 'info' ? 'مساوٍ للاحتياج (إيجابي)' : st === 'down' ? 'أكبر من الاحتياج: احتمال انخفاض حجم السوق' : 'أقل من الاحتياج: احتمال ارتفاع حجم السوق', 'text', st)]; } },
+  { grp: 'ms', id: 'units', t: 'عدد المنتجات والمخزون', page: 'ص95',
+    f: 'المخزون = الوحدات المنتجة − الوحدات المباعة',
+    in: [['prod', 'الوحدات المنتجة'], ['sold', 'الوحدات المباعة'], ['need', 'الحصة المفترضة لكل العملاء (وحدات)']],
+    run: v => { const inv = num(v.prod) - num(v.sold); return [o('المخزون', inv, 'num', good(inv <= num(v.prod) * 0.15, 'up', 'warn')), o('المخزون من الإنتاج', ratio(inv, v.prod), 'pct'),
+      o('المبيعات مقابل الاحتياج', has(v.need) ? (num(v.sold) > num(v.need) ? 'أعلى من الاحتياج: زيادة غير صحية' : 'دون الاحتياج: زيادة صحية قادمة') : '—', 'text', has(v.need) ? good(num(v.sold) <= num(v.need)) : '')]; } },
+  { grp: 'ms', id: 'price', t: 'الأسعار', page: 'ص100–102',
+    f: 'تغير السعر % ؛ سبب الارتفاع: الطلب (دائم) أو التكلفة (غير دائم) ؛ العرض أكبر من الطلب ⇐ احتمال انخفاض الأسعار',
+    in: [['p0', 'سعر الوحدة السابق'], ['p1', 'سعر الوحدة الحالي'], ['dem', 'حجم الطلب'], ['sup', 'حجم العرض'], ['cause', 'سبب التغير', 'sel', ['', 'ارتفاع الطلب', 'ارتفاع التكلفة']]],
+    run: v => { const ch = (num(v.p1) - num(v.p0)) / num(v.p0) * 100; return [o('تغير السعر', ch, 'pct', good(ch >= 0)),
+      o('ديمومة الارتفاع', v.cause === 'ارتفاع الطلب' ? 'سبب دائم لاستمرار الطلب' : v.cause === 'ارتفاع التكلفة' ? 'سبب غير دائم لا يُعتد به' : '—', 'text', v.cause ? good(v.cause === 'ارتفاع الطلب', 'up', 'warn') : ''),
+      o('العرض مقابل الطلب', has(v.sup) && has(v.dem) ? (num(v.sup) > num(v.dem) ? 'العرض يفوق الطلب: احتمال انخفاض الأسعار' : 'الطلب يفوق العرض: داعم لنمو الأسعار') : '—', 'text', has(v.sup) && has(v.dem) ? good(num(v.sup) <= num(v.dem)) : '')]; } },
+
+  /* ---------- chapter 2 / part 2 — market share & capital ---------- */
+  { grp: 'share', id: 'mshare', t: 'الحصة السوقية والعائد على رأس المال', page: 'ص104–105، ص18',
+    f: 'الحصة السوقية = إيرادات الشركة ÷ حجم السوق الفعلي × 100 ؛ العائد على رأس المال = صافي الربح ÷ كامل رأس المال × 100',
+    in: [['rev', 'إيرادات الشركة من المنتج'], ['ms', 'حجم السوق الفعلي'], ['gr', 'نمو الإيرادات %'], ['gm', 'نمو حجم السوق %'], ['np', 'صافي الربح'], ['cap', 'كامل رأس المال'], ['comp', 'حصة أكبر منافس %'], ['roeC', 'عائد المنافس على رأس المال %']],
+    run: v => { const s = ratio(v.rev, v.ms), roe = ratio(v.np, v.cap); return [o('الحصة السوقية', s, 'pct', good(s >= nz(v.comp))), o('العائد على رأس المال', roe, 'pct', has(v.roeC) ? good(roe >= num(v.roeC)) : ''),
+      o('اتجاه الحصة', has(v.gr) && has(v.gm) ? (num(v.gr) > num(v.gm) ? 'تتسع' : num(v.gr) < num(v.gm) ? 'تنكمش' : 'ثابتة') : '—', 'text', has(v.gr) && has(v.gm) ? good(num(v.gr) >= num(v.gm)) : ''),
+      o('الفارق عن المنافس', has(v.comp) ? s - num(v.comp) : NaN, 'pct', has(v.comp) ? good(s >= num(v.comp)) : '', 'احترافية الإدارة تظهر في ارتفاع الحصة رغم تساوي الطاقة الإنتاجية')]; } },
+  { grp: 'share', id: 'capital', t: 'رأس المال العام', page: 'ص109–110',
+    f: 'رأس المال العام = الموجودات المتداولة + غير المتداولة ؛ العائد = الأرباح ÷ كامل رأس المال ؛ الربح المضاف = قيمة الاستثمار الجديد × العائد ؛ القدرة قصيرة المدى = المتداولة ÷ المطلوبات المتداولة',
+    in: [['ca', 'الموجودات المتداولة'], ['nca', 'الموجودات غير المتداولة'], ['cl', 'المطلوبات المتداولة'], ['np', 'صافي الربح'], ['newInv', 'قيمة الاستثمار الجديد'], ['eq', 'حقوق المساهمين'], ['loss', 'الخسارة السنوية (إن وجدت)'], ['capG', 'نمو رأس المال %'], ['npG', 'نمو الأرباح %']],
+    run: v => { const tc = num(v.ca) + nz(v.nca); const roe = num(v.np) / tc * 100; const cr = num(v.ca) / num(v.cl); return [
+      o('رأس المال العام', tc, 'money'), o('العائد على رأس المال', roe, 'pct', good(roe > 0)), o('الربح المتوقع من الاستثمار الجديد', num(v.newInv) * roe / 100, 'money', 'up'),
+      o('نسبة التداول (متداولة ÷ مطلوبات متداولة)', cr, 'num', good(cr >= 1), 'ارتفاع المتداولة عن المطلوبات المتداولة دليل قدرة على السداد'),
+      o('سنوات قبل الخسارة من رأس المال', has(v.loss) && num(v.loss) > 0 ? num(v.eq) / num(v.loss) : NaN, 'num', has(v.loss) ? 'warn' : ''),
+      o('صحة النمو', has(v.capG) && has(v.npG) ? (num(v.capG) > 0 && num(v.npG) > 0 ? 'نمو رأس المال متزامن مع نمو الأرباح' : 'غير متزامن') : '—', 'text', has(v.capG) && has(v.npG) ? good(num(v.capG) > 0 && num(v.npG) > 0) : '')]; } },
+  { grp: 'share', id: 'equity', t: 'حقوق المساهمين والشهرة', page: 'ص115',
+    f: 'الحقوق = الموجودات − المطلوبات ؛ الشهرة يجب ألا تتعدى ربع كامل الموجودات',
+    in: [['ta', 'الموجودات'], ['li', 'المطلوبات'], ['gw', 'قيمة الشهرة'], ['gA', 'نمو الموجودات %'], ['gL', 'نمو المطلوبات %'], ['sh', 'عدد الأسهم']],
+    run: v => { const eq = num(v.ta) - nz(v.li), gwR = ratio(v.gw, v.ta); return [o('حقوق المساهمين', eq, 'money', good(eq > 0)), o('القيمة الدفترية للسهم', eq / num(v.sh), 'sar', '', 'معيار التقييم في ظروف الخسارة (ص14)'),
+      o('الشهرة من الموجودات', gwR, 'pct', has(v.gw) ? good(gwR <= 25) : '', gwR > 25 ? 'تجاوزت الربع: الموجودات مقيّمة بأكثر من قيمتها' : ''),
+      o('نمو المطلوبات مقابل الموجودات', has(v.gA) && has(v.gL) ? (num(v.gL) <= num(v.gA) ? 'ثابت أو متناقص مقابل الموجودات: نمو حقيقي' : 'المطلوبات تنمو أسرع') : '—', 'text', has(v.gA) && has(v.gL) ? good(num(v.gL) <= num(v.gA)) : '')]; } },
+  { grp: 'share', id: 'capUsed', t: 'الطاقة الإنتاجية المستخدمة والقصوى', page: 'ص118–121',
+    f: 'الوحدات لكل 1% = الوحدات المنتجة ÷ نسبة الطاقة المستخدمة ؛ الإنتاج الأقصى = الوحدات لكل 1% × 100 ؛ الإيرادات القصوى = الإنتاج الأقصى × سعر الوحدة',
+    in: [['prod', 'الوحدات المنتجة'], ['usedPct', 'الطاقة المستخدمة %'], ['price', 'سعر الوحدة'], ['rev', 'الإيرادات الحالية']],
+    run: v => { const per = num(v.prod) / num(v.usedPct); const full = per * 100; const maxRev = full * num(v.price); return [o('الوحدات من استخدام 1% من الطاقة', per, 'num'), o('الإنتاج عند كامل الطاقة', full, 'num'),
+      o('الإيرادات القصوى', maxRev, 'money'), o('الإيرادات الممكن إضافتها', maxRev - num(v.rev), 'money', 'up'),
+      o('حالة الطاقة', has(v.usedPct) ? (num(v.usedPct) >= 95 ? 'عند أقصى طاقة: لا نمو إلا برفع السعر، والاستمرارية غير موثوقة' : 'هناك مساحة للنمو') : '—', 'text', has(v.usedPct) ? good(num(v.usedPct) < 95, 'up', 'warn') : '')]; } },
+  { grp: 'share', id: 'capExp', t: 'الطاقة الإنتاجية المتوقعة (المشاريع تحت التهيئة)', page: 'ص124–126',
+    f: 'الربحية المضافة = الإيرادات المتوقعة × هامش الربح ؛ أو تكلفة المشروع × العائد على حقوق المساهمين ؛ ÷ عدد الأسهم ؛ × 15 = القيمة المضافة',
+    in: [['rev', 'الإيرادات المتوقعة من المشروع'], ['mg', 'هامش الربح %'], ['cost', 'تكلفة المشروع (بديل)'], ['roe', 'العائد على حقوق المساهمين % (بديل)'], ['sh', 'عدد الأسهم'], ['plan', 'موعد بدء الإنتاج المعلن', 'date'], ['exp', 'الموعد المتوقع الآن', 'date']],
+    run: v => { const add = has(v.rev) ? num(v.rev) * num(v.mg) / 100 : num(v.cost) * num(v.roe) / 100; const eps = add / num(v.sh); const d = v.plan && v.exp ? Math.round((new Date(v.exp) - new Date(v.plan)) / 864e5 / 30.4) : NaN; return [
+      o('الربح المضاف سنوياً', add, 'money', 'up'), o('ربحية السهم المضافة', eps, 'sar', 'up'), o('القيمة العادلة المضافة (× 15)', eps * 15, 'sar', 'up'),
+      o('التأخر عن الموعد (بالأشهر)', d, 'num', isNaN(d) ? '' : good(d <= 0), isNaN(d) ? '' : d > 0 ? 'التأخر يؤثر في التقييم سلباً' : d < 0 ? 'التقدم يؤثر في التقييم إيجاباً' : 'في موعده')]; } },
+  { grp: 'share', id: 'reserve', t: 'الطاقة المحتملة — الاحتياطي النظامي والسيولة المبقاة', page: 'ص128–129',
+    f: 'يُخصم 10% من صافي الربح للاحتياطي النظامي حتى يبلغ 30% من رأس المال ؛ ما زاد عن 30% يتيح الاستثمار',
+    in: [['np', 'صافي الربح'], ['cap', 'رأس المال'], ['res', 'الاحتياطي النظامي الحالي'], ['ret', 'الأرباح المبقاة'], ['need', 'السيولة المحتاج لها للتشغيل'], ['exp', 'تكلفة التوسعة / خط إنتاج جديد']],
+    run: v => { const resP = ratio(v.res, v.cap); const add = num(v.np) * 0.10; const free = nz(v.ret) + Math.max(0, nz(v.res) - num(v.cap) * 0.30) - nz(v.need); return [
+      o('المقتطع للاحتياطي هذا العام (10%)', resP >= 30 ? 0 : add, 'money'), o('الاحتياطي من رأس المال', resP, 'pct', good(resP >= 30, 'up', 'warn'), resP >= 30 ? 'تجاوز 30%: للشركة القدرة على الاستثمار بزيادة رأس المال أو المساهمة في شركات' : 'دون 30%: لا تتصرف الشركة فيه'),
+      o('السيولة المبقاة غير المحتاج لها', free, 'money'), o('كفاية السيولة للتوسعة', has(v.exp) ? (free >= num(v.exp) ? 'كافية: قدرة على رفع الإنتاج' : 'غير كافية') : '—', 'text', has(v.exp) ? good(free >= num(v.exp)) : '')]; } },
+
+  /* ---------- chapter 2 / part 3 — profit margin, costs, revenues ---------- */
+  { grp: 'margin', id: 'margin', t: 'هامش الربحية', page: 'ص132–133',
+    f: 'صافي الربح = الإيرادات − المصروفات ؛ الهامش = صافي الربح ÷ الإيرادات × 100 ؛ ربح المشروع المستقبلي = الإيرادات المتوقعة × الهامش',
+    in: [['rev', 'إجمالي الإيرادات'], ['exp', 'إجمالي المصروفات'], ['fut', 'الإيرادات المتوقعة لمشروع قادم']],
+    run: v => { const np = num(v.rev) - num(v.exp), m = np / num(v.rev) * 100; return [o('صافي الربح', np, 'money', good(np >= 0)), o('هامش الربح', m, 'pct', good(m > 0)), o('ربح المشروع المتوقع', num(v.fut) * m / 100, 'money')]; } },
+  { grp: 'margin', id: 'opCosts', t: 'التكاليف التشغيلية', page: 'ص139–143',
+    f: 'التشغيلية = الشراء أو التصنيع + الشحن + التخزين + التسويق + المخصصات ؛ (دائمة ربعية، موسمية سنوية، غير متكررة) ؛ هامش التشغيل = (الإيرادات التشغيلية − التشغيلية) ÷ الإيرادات',
+    in: [['buy', 'تكلفة الشراء أو التصنيع'], ['ship', 'تكلفة الشحن'], ['store', 'تكلفة التخزين'], ['mkt', 'تكلفة التسويق'], ['prov', 'المخصصات'], ['seas', 'منها موسمية'], ['once', 'منها غير متكررة'], ['rev', 'الإيرادات التشغيلية'], ['provUsed', 'المصروف فعلياً من المخصصات']],
+    run: v => { const parts = ['buy', 'ship', 'store', 'mkt', 'prov'].map(k => nz(v[k])); const tot = sum(parts); const m = (num(v.rev) - tot) / num(v.rev) * 100; const rec = tot - nz(v.once); return [
+      o('إجمالي التكاليف التشغيلية', tot, 'money'), o('هامش الربح التشغيلي', m, 'pct', good(m > 0), 'حجر الأساس للعملية الاستثمارية'),
+      o('هامش التشغيل بعد استبعاد غير المتكرر', (num(v.rev) - rec) / num(v.rev) * 100, 'pct'),
+      o('المخصصات من الإيرادات', ratio(v.prov, v.rev), 'pct', '', 'ارتفاعها يدل على ارتفاع احتمالية مواجهة خسائر'),
+      o('المخصصات غير المصروفة', has(v.provUsed) ? num(v.prov) - num(v.provUsed) : NaN, 'money', has(v.provUsed) ? 'up' : '', 'عدم صرفها قد يعني عكس المخصص وإضافته للاحتياطي')]; } },
+  { grp: 'margin', id: 'finCosts', t: 'التكاليف التمويلية (القروض)', page: 'ص150–154',
+    f: 'الفائدة = إجمالي السداد − أصل القرض ؛ نسبة القسط من الأرباح التشغيلية ؛ أرباح المشروع − القسط = إضافة للربحية ؛ القروض ÷ الموجودات',
+    in: [['loan', 'أصل القرض'], ['repay', 'إجمالي السداد'], ['inst', 'القسط السنوي'], ['op', 'الأرباح التشغيلية'], ['proj', 'أرباح المشروع الممول'], ['sh', 'عدد الأسهم'], ['ta', 'كامل الموجودات'], ['plan', 'موعد السداد المحدد', 'date'], ['exp', 'موعد السداد المتوقع', 'date']],
+    run: v => { const int = num(v.repay) - num(v.loan); const instP = ratio(v.inst, v.op); const add = num(v.proj) - num(v.inst); const d = v.plan && v.exp ? Math.round((new Date(v.exp) - new Date(v.plan)) / 864e5 / 30.4) : NaN; return [
+      o('مقدار الفائدة', int, 'money', 'down'), o('القسط من الأرباح التشغيلية', instP, 'pct', good(instP < 25, 'up', 'warn'), 'علاقة عكسية: كلما انخفض كان إيجابياً'),
+      o('صافي إضافة المشروع بعد القسط', add, 'money', good(add >= 0), add >= 0 ? 'القرض مصدر توسعي للشركة' : 'السداد يحتاج الأخذ من مشاريع أخرى: سلبي'),
+      o('ربحية السهم المضافة', add / num(v.sh), 'sar', good(add >= 0)), o('القروض من الموجودات', ratio(v.loan, v.ta), 'pct', has(v.ta) ? good(ratio(v.loan, v.ta) < 40, 'up', 'warn') : '', 'ارتفاعها يدل على إشكالية'),
+      o('التأخر في السداد (أشهر)', d, 'num', isNaN(d) ? '' : good(d <= 0))]; } },
+  { grp: 'margin', id: 'invCosts', t: 'التكاليف الاستثمارية', page: 'ص157',
+    f: 'العائد المتوقع = قيمة الاستثمار × العائد على الأصول ؛ ثم يطبق الهامش والعائد على رأس المال لتطبيق معادلة التقييم مبكراً',
+    in: [['inv', 'قيمة الاستثمار'], ['roa', 'العائد على الأصول %'], ['sh', 'عدد الأسهم']],
+    run: v => { const r = num(v.inv) * num(v.roa) / 100; return [o('العائد المتوقع من الاستثمار', r, 'money', 'up'), o('ربحية السهم المضافة', r / num(v.sh), 'sar'), o('القيمة العادلة المضافة (× 15)', r / num(v.sh) * 15, 'sar', 'up')]; } },
+  { grp: 'margin', id: 'admin', t: 'التكاليف الإدارية', page: 'ص160–165',
+    f: 'كل بند ÷ الأرباح التشغيلية × 100 (رواتب، مكافآت، إيجارات، خدمات) — علاقة عكسية',
+    in: [['sal', 'الرواتب'], ['bon', 'المكافآت'], ['rent', 'الإيجارات'], ['serv', 'الخدمات'], ['op', 'الأرباح التشغيلية']],
+    run: v => { const t = nz(v.sal) + nz(v.bon) + nz(v.rent) + nz(v.serv); return [o('الرواتب', ratio(v.sal, v.op), 'pct'), o('المكافآت', ratio(v.bon, v.op), 'pct'), o('الإيجارات', ratio(v.rent, v.op), 'pct'), o('الخدمات', ratio(v.serv, v.op), 'pct'),
+      o('إجمالي الإدارية من الأرباح التشغيلية', t / num(v.op) * 100, 'pct', good(t / num(v.op) < 0.35, 'up', 'warn'), 'الإفراط فيها دليل سوء إدارة؛ وتقليلها أرباح خفية تظهر مع تغير الإدارة')]; } },
+  { grp: 'margin', id: 'opRev', t: 'الإيرادات التشغيلية', page: 'ص167–168',
+    f: 'الإيرادات المعتمدة في التوقع = الدائمة + الموسمية ؛ غير المتكررة تضاف لرأس المال ؛ مقارنة الربع بسابقه وبالربع المماثل',
+    in: [['perm', 'تشغيلية دائمة'], ['seas', 'تشغيلية موسمية'], ['once', 'تشغيلية غير متكررة'], ['q', 'الربع الحالي'], ['qp', 'الربع السابق'], ['qy', 'الربع المماثل من العام الماضي'], ['gm', 'نمو حجم السوق %']],
+    run: v => { const qoq = (num(v.q) - num(v.qp)) / num(v.qp) * 100, yoy = (num(v.q) - num(v.qy)) / num(v.qy) * 100; return [
+      o('الإيرادات المعتمدة في توقع الربحية', nz(v.perm) + nz(v.seas), 'money'), o('تضاف لرأس المال / أرباح استثنائية', nz(v.once), 'money'),
+      o('الربع مقابل السابق', qoq, 'pct', good(qoq >= 0)), o('الربع مقابل المماثل', yoy, 'pct', good(yoy >= 0)),
+      o('توافق النمو مع حجم السوق', has(v.gm) && !isNaN(yoy) ? (yoy >= num(v.gm) ? 'متوافق أو أعلى' : 'أقل من نمو السوق') : '—', 'text', has(v.gm) && !isNaN(yoy) ? good(yoy >= num(v.gm)) : '')]; } },
+  { grp: 'margin', id: 'finRev', t: 'الإيرادات التمويلية', page: 'ص174–175',
+    f: 'نسبة القسط من ربحية استثماره: أقل من 100% إيجابي، 100% تعادل، أكثر من 100% سلبي',
+    in: [['inc', 'دخل المشروع الممول'], ['inst', 'قسط القرض']],
+    run: v => { const r = ratio(v.inst, v.inc); return [o('القسط من دخل المشروع', r, 'pct', isNaN(r) ? '' : r < 100 ? 'up' : r === 100 ? 'info' : 'down', isNaN(r) ? '' : r < 100 ? 'يبقى فائض: القرض إيجابي ويعكس كفاءة الإيرادات' : r === 100 ? 'تعادل' : 'السداد يحتاج الأخذ من مشاريع أخرى: سلبي'), o('الفائض بعد القسط', num(v.inc) - num(v.inst), 'money')]; } },
+  { grp: 'margin', id: 'invRev', t: 'الإيرادات الاستثمارية', page: 'ص177–178',
+    f: 'الإيرادات الاستثمارية ÷ كامل الإيرادات × 100 ؛ الدائمة تضاف للربحية، وغير الدائمة لرأس المال',
+    in: [['inc', 'إيرادات الاستثمار'], ['rev', 'كامل الإيرادات'], ['kind', 'نمط الإيراد', 'sel', ['', 'مستمر ونمطي', 'غير دائم']]],
+    run: v => [o('المحفظة الاستثمارية من الإيرادات', ratio(v.inc, v.rev), 'pct', 'up', 'علاقة طردية'), o('أين يضاف', v.kind === 'مستمر ونمطي' ? 'إلى ربحية الشركة (الخطوة 7 في المعادلة)' : v.kind === 'غير دائم' ? 'إلى رأس المال' : '—', 'text', v.kind ? 'info' : '')] },
+  { grp: 'margin', id: 'otherRev', t: 'الإيرادات الأخرى', page: 'ص180–181',
+    f: 'الإيرادات الأخرى ÷ كامل الإيرادات × 100 ؛ تضاف للسيولة لا للربحية ؛ بيع الأصل بأقل من قيمته الدفترية يضعف مصداقية حقوق المساهمين',
+    in: [['oth', 'الإيرادات الأخرى'], ['rev', 'كامل الإيرادات'], ['sale', 'سعر بيع الأصل'], ['book', 'القيمة الدفترية للأصل']],
+    run: v => [o('الإيرادات الأخرى من الإيرادات', ratio(v.oth, v.rev), 'pct'), o('ربح/خسارة بيع الأصل', num(v.sale) - num(v.book), 'money', has(v.sale) ? good(num(v.sale) >= num(v.book), 'up', 'warn') : '', has(v.sale) && num(v.sale) < num(v.book) ? 'البيع بأقل من التقييم: احتمال تقييم الأصول بأعلى من قيمتها' : '')] }
+];
+const CALC_GROUPS = [
+  { id: 'ch1', t: 'تأكيد التصنيف والتقييم', sub: 'الفصل الأول · الباب الثاني' },
+  { id: 'ms', t: 'حجم السوق', sub: 'الفصل الثاني · الباب الأول' },
+  { id: 'share', t: 'الحصة السوقية والقدرات', sub: 'الفصل الثاني · الباب الثاني' },
+  { id: 'margin', t: 'هامش الربحية والتكاليف والإيرادات', sub: 'الفصل الثاني · الباب الثالث' }
+];
+
+/* ========= indicators — every "مؤشر" chart in the book, with its relation ========= */
+const IND = [
+  ['eps', 'ربحية السهم التشغيلية', '+', 'ص43'], ['prodProfit', 'ربحية الشركة من المنتج', '+', 'ص55'], ['prodMS', 'حجم السوق للمنتج', '+', 'ص56'], ['prodShare', 'حصة الشركة السوقية من المنتج', '+', 'ص57'], ['prodMargin', 'هامش الربح للمنتج', '+', 'ص58'],
+  ['peerPrice', 'سعر سهم شركة عوائد', 'i', 'ص61'], ['peerEps', 'ربحية سهم شركة عوائد', 'i', 'ص62'], ['peerPE', 'مكرر سهم شركة عوائد', 'i', 'ص63'],
+  ['salesTot', 'المبيعات الكلي (افتراضاً)', '+', 'ص76'], ['salesAct', 'المبيعات الفعلي', '+', 'ص77'], ['custAct', 'عدد العملاء الفعلي', '+', 'ص85'], ['custTot', 'عدد العملاء الكلي', '+', 'ص86'], ['custPot', 'عدد العملاء المحتمل', '+', 'ص87'],
+  ['living', 'تكلفة المعيشة % من الدخل', '-', 'ص88'], ['income', 'متوسط الدخل', '+', 'ص89'], ['consAct', 'كمية الاستهلاك الفعلية لكل عميل', '~', 'ص92'], ['consAss', 'الاستهلاك المفترض لكل عميل', '+', 'ص93'],
+  ['unitsSold', 'عدد المنتجات المباعة', '+', 'ص97'], ['unitsOffer', 'عدد المنتجات المعروضة', '~', 'ص98'], ['price', 'سعر المنتج', '+', 'ص101'], ['priceSurplus', 'نسبة سعر المنتج في فائض العميل', '-', 'ص102'],
+  ['compShare', 'الحصة السوقية للمنافس', '-', 'ص106'], ['coShare', 'الحصة السوقية للشركة', '+', 'ص107'], ['capital', 'رأس المال', '~', 'ص111'], ['nca', 'الموجودات غير المتداولة', '+', 'ص112'], ['ca', 'الموجودات المتداولة', '+', 'ص113'],
+  ['equity', 'حقوق المساهمين', '+', 'ص116'], ['capUsed', 'الطاقة الإنتاجية المستخدمة', '+', 'ص119'], ['capMax', 'الطاقة الإنتاجية القصوى', '+', 'ص122'], ['proj', 'الاستثمارات (المشاريع)', '+', 'ص125'], ['reserve', 'الاحتياطي النظامي', '+', 'ص130'],
+  ['rev', 'إجمالي الإيرادات', '+', 'ص134'], ['exp', 'إجمالي المصروفات', '-', 'ص135'], ['np', 'صافي الربح', '+', 'ص136'], ['margin', 'هامش الربح', '+', 'ص137'],
+  ['costProd', 'تكلفة المنتج (شراء/تصنيع)', '-', 'ص143'], ['ship', 'أسعار الشحن', '-', 'ص144'], ['storage', 'تكلفة التخزين', '-', 'ص145'], ['mkt', 'تكلفة التسويق', '-', 'ص146'], ['provDed', 'الخصم للمخصصات', '-', 'ص147'], ['provBal', 'مقدار بلوغ المخصصات', '+', 'ص148'],
+  ['instPct', 'قسط القرض % من الأرباح التشغيلية', '-', 'ص153'], ['loanInt', 'فوائد القروض', '-', 'ص155'], ['invAmt', 'مقدار الاستثمار', '+', 'ص158'],
+  ['sal', 'الرواتب % من الأرباح التشغيلية', '-', 'ص162'], ['bon', 'المكافآت % من الأرباح التشغيلية', '-', 'ص163'], ['rent', 'الإيجارات % من الأرباح التشغيلية', '-', 'ص164'], ['serv', 'الخدمات % من الأرباح التشغيلية', '-', 'ص165'],
+  ['opRev', 'الإيرادات التشغيلية كاملة', '+', 'ص169'], ['opPerm', 'الإيرادات التشغيلية الدائمة', '+', 'ص170'], ['opSeas', 'الإيرادات التشغيلية الموسمية', '+', 'ص171'], ['opOnce', 'الإيرادات التشغيلية غير المتكررة', '+', 'ص172'],
+  ['loanInc', 'القسط % من ربحية استثماره', '<100', 'ص175'], ['invInc', 'إيرادات المحفظة الاستثمارية % من الإيرادات', '+', 'ص178'], ['otherInc', 'الإيرادات الأخرى % من الإيرادات', '+', 'ص181']
+].map(([id, t, rel, page]) => ({ id, t, rel, page }));
+const REL_TXT = { '+': 'طردية: كلما ارتفع كان إيجابياً', '-': 'عكسية: كلما انخفض كان إيجابياً', '~': 'نسبية: تُقرأ بحسب الحالة', 'i': 'مرجعية لاستخراج المتوسط', '<100': 'نسبية: إيجابي ما دام أقل من 100%' };
+
+/* ========= implicit values (chapter 3) ========= */
+const IMPLICIT = [
+  { id: 'nat', t: 'المحور الطبيعي', page: 'ص187', items: [['natRisk', 'انخفاض احتمالية الظواهر الطبيعية المعطلة لسلسلة الإنتاج (زلازل، عواصف، حرارة)']] },
+  { id: 'gov', t: 'محور النظم الدولية', page: 'ص189', items: [['stab', 'استقرار الحكومة والشعب'], ['sec', 'الأمن وانخفاض الجريمة'], ['infra', 'تطور البنى التحتية ونموها']] },
+  { id: 'co', t: 'محور الشركة', page: 'ص191–193', items: [['edu', 'الخلفية العلمية للإدارة'], ['skill', 'المهارات العملية للإدارة'], ['beat', 'تفوق النتائج المالية على التحليل'], ['peer', 'تفوق الأرقام على الشركات المنافسة (العائد والهامش)'], ['gov', 'وجود حوكمة ونماذج عمل غير متروكة لاجتهاد الموظفين'], ['cust', 'ملاءمة المنتج لثقافة عميله (عميل الجوهر: سعر وجودة · عميل المظهر: شكل وتسويق)']] },
+  { id: 'mkt', t: 'محور التداول', page: 'ص195–196', items: [['rulesCo', 'صرامة قوانين السوق تجاه الشركات المدرجة'], ['rulesBr', 'صرامة القوانين تجاه شركات الوساطة'], ['rulesTr', 'صرامة القوانين تجاه المتداولين'], ['broker', 'جودة الوسيط: العمولة والسرعة وقلة الأعطال']] },
+  { id: 'trd', t: 'محور المتداولين', page: 'ص198', items: [['cult', 'ثقافة المتداولين الاستثمارية (تزيد مصداقية متوسط المكررات)'], ['solv', 'الملاءة المالية للمتداولين']] }
+];
+
+/* ========= work schedule (p.212) ========= */
+const SCHEDULE = [
+  { p: 'يومي', items: ['الأخبار: تحديد علاقة الخبر إيجابي أو سلبي', 'التعرف على مقدار التأثير والتنبؤ بمقدار استمراره', 'تحويل الأخبار إلى رقم في معادلة التقييم'] },
+  { p: 'أسبوعي', items: ['الشارت: اتجاه سعر الشركة', 'الفرق بين القيمة العادلة والسوقية'] },
+  { p: 'شهري', items: ['الفائدة', 'التضخم في حدود المسموح'] },
+  { p: 'دوري', items: ['مراجعة تصنيف الشركات والتأكد منه'] },
+  { p: 'ربع سنوي', items: ['النتائج المالية: الفرق بين الفعلي والمتوقع', 'التأكد من خلو النتائج المقارن بها من نتائج استثنائية', 'الاطلاع على توقعات بيوت الخبرة'] },
+  { p: 'نصف سنوي', items: ['الاتجاه العام', 'مقدار الناتج المحلي ومتوسط دخل الفرد'] },
+  { p: 'سنوي', items: ['الميزانية العامة: العجز والفائض', 'تكلفة المعيشة', 'إعادة تصنيف الشركات بالكامل'] }
+];
+
+/* ========= formula reference ========= */
+const REF = [
+  ['المعادلة المنقحة (السردية)', 'ص68', '(Σ حجم السوق × الحصة السوقية) × هامش الربح + عوائد الاستثمارات ÷ عدد الأسهم × 15 = القيمة العادلة', 'المحرك الأساسي — اعتمد البيانات المتوقعة من التقارير أو أنماط النمو'],
+  ['المعادلة الأم', 'ص16', 'القيمة العادلة = متوسط مكرر شركات العوائد الثابتة (A) × متوسط الربحية النهائية المستمرة للسهم (B)', 'تظهر للمقارنة مع المنقحة'],
+  ['المتغير A', 'ص17، ص60، ص65', 'A = Σ (السعر ÷ الربح) لكل شركة عوائد ÷ عدد الشركات ؛ السعر = متوسط متحرك بسيط 200 يوم ؛ الربح = (صافي الدخل − الإيرادات الأخرى) ÷ عدد الأسهم', ''],
+  ['المتغير B', 'ص18', 'B = حجم السوق الفعلي × الحصة السوقية % × هامش الربحية %', ''],
+  ['حجم السوق الفعلي', 'ص18', 'عدد العملاء × مقدار الحصة السنوية ؛ الحصة السنوية = عدد الوحدات بالسنة × سعر الوحدة', ''],
+  ['أهلية العميل', 'ص18، ص79', 'تكاليف السلع الأكثر أهمية + حصته السنوية من المنتج < متوسط دخله', ''],
+  ['الحصة السوقية', 'ص18، ص104', 'إيرادات الشركة ÷ حجم السوق الفعلي × 100 (تتأثر بالطاقة الإنتاجية % والسيولة %)', ''],
+  ['هامش الربحية', 'ص18، ص133', 'صافي الربح ÷ الإيرادات × 100 ؛ صافي الربح = الإيرادات − المصروفات', ''],
+  ['مدى التقييم', 'ص12', 'أعلى مكرر − أقل مكرر لشركات العوائد', 'للتداول على فرق السعر (الطريقة الرابعة)'],
+  ['القيمة في ظروف الخسارة', 'ص14', 'القيمة الدفترية = (الموجودات − المطلوبات) ÷ عدد الأسهم', ''],
+  ['خاسرة من رأس المال', 'ص26–27', 'حقوق المساهمين ÷ رأس المال ؛ القيمة الدفترية < القيمة الاسمية', ''],
+  ['خاسرة لآخر سنة', 'ص28–29', 'صافي الدخل − الإيرادات الأخرى < 0', ''],
+  ['منكمشة', 'ص30', '(صافي الدخل − الإيرادات الأخرى) لكل ربع − الربع السابق، لأربعة أرباع، بالسالب', ''],
+  ['نمو', 'ص31–32', 'حقوق المساهمين والمبيعات في ازدياد مستمر، أو عدة زيادات في رأس المال', ''],
+  ['عوائد', 'ص33', 'ثبات نسبي في الأرباح + توزيعات مستمرة', ''],
+  ['دورية', 'ص34', 'تقلب في الأرباح دون استمرار للنمو أو الخسارة', ''],
+  ['حديثة/تاريخية', 'ص35', 'تاريخ التأسيس أقل من عشر سنوات = حديثة', ''],
+  ['الحجم', 'ص36', 'مقارنة رأس المال بشركات القطاع نفسه', ''],
+  ['النشاط', 'ص37–38', 'دفاعية · دورية · واعدة · كمالية', ''],
+  ['متوسط النمو', 'ص67', '(سنة − السابقة) ÷ السابقة × 100 ؛ المتوسط ؛ يضاف على آخر سنة محققة ثم التي بعدها', ''],
+  ['زمن وصول الفعلي للكلي', 'ص74', 'ln(الكلي ÷ الفعلي) ÷ ln((1+نمو الفعلي) ÷ (1+نمو الكلي))', 'صيغة رياضية تحقق غرض النص الناقص'],
+  ['متوسط الدخل', 'ص83', 'الناتج المحلي ÷ عدد السكان', ''],
+  ['الاستهلاك الفعلي', 'ص92', 'المنتجات المباعة ÷ العملاء الفعليين', ''],
+  ['المخزون', 'ص95', 'الوحدات المنتجة − الوحدات المباعة', ''],
+  ['العائد على رأس المال', 'ص104، ص109', 'صافي الربح ÷ كامل رأس المال × 100', ''],
+  ['رأس المال العام', 'ص109–110', 'الموجودات المتداولة + غير المتداولة', ''],
+  ['الشهرة', 'ص115', 'الشهرة ≤ ربع كامل الموجودات', ''],
+  ['الطاقة القصوى', 'ص118', 'الوحدات المنتجة ÷ الطاقة المستخدمة % × 100', ''],
+  ['الربحية المضافة من المشاريع', 'ص124', 'الإيرادات المتوقعة × الهامش ÷ عدد الأسهم', ''],
+  ['الاحتياطي النظامي', 'ص128', '10% من صافي الربح حتى 30% من رأس المال', ''],
+  ['الفائدة', 'ص152', 'مقدار القرض − مقدار السداد', ''],
+  ['العائد من الاستثمار', 'ص157', 'قيمة الاستثمار × العائد على الأصول', ''],
+  ['التكاليف الإدارية', 'ص160–165', 'كل بند ÷ الأرباح التشغيلية', ''],
+  ['قواعد الشراء والبيع', 'ص209', 'عوائد: شراء تحت القيمة بـ25% أو تحت متوسط الشراء بـ25%، بيع فوقها بـ10% · نمو: شراء إذا نما السعر بوتيرة القيمة، بيع إذا تجاوزها · انكماش: بيع مع تناقص القيمة', ''],
+  ['مناطق الشراء والبيع', 'ص201', 'كل 25% من سعر الصفقة أو من القيمة العادلة', ''],
+  ['توزيع السيولة', 'ص208', 'ربع للأسهم، ربع للتعديل بعد هبوط 30%، نصف للفرص النادرة ؛ الشركة الواحدة ≤ 5% (≤ 30% إذا تأكد نموها)', '']
+];
+
+/* ========= view helpers ========= */
+const CH = {};
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function chart(id, cfg) {
+  if (CH[id]) { CH[id].destroy(); delete CH[id]; }
+  const el = document.getElementById(id); if (!el || !window.Chart) return;
+  Chart.defaults.font.family = '"IBM Plex Sans Arabic", system-ui, sans-serif';
+  Chart.defaults.color = css('--muted'); Chart.defaults.borderColor = css('--line');
+  CH[id] = new Chart(el, cfg);
+}
+function fid(scope, path) { return 'f-' + scope + '-' + path.replace(/[^\w]/g, '-'); }
+function fld(path, label, opt = {}) {
+  const scope = opt.scope || 'b';
+  const src = scope === 's' ? SET : scope === 'g' ? DB : cur();
+  const val = getPath(src, path) ?? '';
+  const id = fid(scope, path);
+  let ctl;
+  if (opt.sel) ctl = `<select id="${id}" data-${scope}="${path}">${opt.sel.map(x => { const [v, t] = Array.isArray(x) ? x : [x, x || '—']; return `<option value="${esc(v)}"${String(val) === String(v) ? ' selected' : ''}>${esc(t)}</option>`; }).join('')}</select>`;
+  else if (opt.area) ctl = `<textarea id="${id}" data-${scope}="${path}" placeholder="${esc(opt.ph || '')}">${esc(val)}</textarea>`;
+  else ctl = `<input id="${id}" type="${opt.type || 'text'}" data-${scope}="${path}" class="${opt.text ? '' : 'n'}" value="${esc(val)}" placeholder="${esc(opt.ph || '')}" autocomplete="off"${opt.ro ? ' readonly' : ''}>`;
+  return `<div class="f ${opt.cls || ''}"><label for="${id}">${esc(label)}</label>${ctl}${opt.hint ? `<span class="hint">${esc(opt.hint)}</span>` : ''}</div>`;
+}
+function outRow(x) {
+  let v;
+  if (x.kind === 'text') v = `<span>${esc(x.v)}</span>`;
+  else { const s = x.kind === 'money' ? money(x.v) : x.kind === 'pct' ? pct(x.v) : x.kind === 'sar' ? sar(x.v) : fmt(x.v); v = `<span class="v">${s}</span>`; }
+  const empty = x.kind === 'text' ? (x.v === '—' || x.v === '' || x.v == null) : (x.v === null || x.v === undefined || isNaN(x.v) || !isFinite(x.v));
+  const ch = x.st && !empty ? `<span class="chip ${x.st}">${x.st === 'up' ? 'إيجابي' : x.st === 'down' ? 'سلبي' : x.st === 'warn' ? 'انتبه' : 'معلومة'}</span>` : '';
+  return `<div class="out"><span class="l">${esc(x.l)}</span><span class="row gap">${v}${ch}</span>${x.note ? `<span class="note muted">${esc(x.note)}</span>` : ''}</div>`;
+}
+const head = (t, sub) => `<h1 class="vt">${esc(t)}</h1>${sub ? `<p class="vsub">${sub}</p>` : ''}`;
+const exampleBanner = c => c.example ? `<div class="banner">هذه شركة مثال ببيانات توضيحية مبنية على مثال الكتاب في ص211 (حجم سوق 4 مليار × حصة 25% × هامش 50%). أنشئ شركة جديدة أو استخدم مختبر الذكاء لجلب بيانات شركة حقيقية.</div>` : '';
+
+/* ========= navigation ========= */
+const NAV = [
+  { g: 'السوق' }, { id: 'market', t: 'أسهم السوق' },
+  { g: 'التقييم' }, { id: 'dash', t: 'الملخص' }, { id: 'revised', t: 'المعادلة المنقحة' }, { id: 'mother', t: 'المعادلة الأم والمكررات' }, { id: 'classify', t: 'تصنيف الشركة' },
+  { g: 'التحليل' }, { id: 'deep', t: 'التحليل العميق' }, { id: 'ind', t: 'متتبع المؤشرات' }, { id: 'implicit', t: 'القيم المضمّنة' },
+  { g: 'التداول' }, { id: 'portfolio', t: 'المحفظة والصفقات' }, { id: 'schedule', t: 'جدول الأعمال' },
+  { g: 'الذكاء الاصطناعي' }, { id: 'ai', t: 'مختبر الذكاء' }, { id: 'settings', t: 'المفاتيح والنماذج' },
+  { g: 'مرجع' }, { id: 'ref', t: 'مرجع المعادلات' }
+];
+let UI = Object.assign({ view: 'market', ind: 'eps' }, store.get(LS_UI, {}));
+const VIEWS = {};
+function renderNav() {
+  let k = 0;
+  $('#nav').innerHTML = NAV.map(n => n.g ? `<div class="grp">${esc(n.g)}</div>` : `<button data-nav="${n.id}" class="${UI.view === n.id ? 'on' : ''}"><span class="k">${String(++k).padStart(2, '0')}</span>${esc(n.t)}</button>`).join('');
+}
+function go(id) { UI.view = id; store.set(LS_UI, UI); renderNav(); render(); window.scrollTo({ top: 0 }); }
+function render() {
+  Object.keys(CH).forEach(k => { CH[k].destroy(); delete CH[k]; });
+  const v = VIEWS[UI.view] || VIEWS.dash;
+  $('#view').innerHTML = v.render();
+  v.update && v.update();
+}
+function renderCoSelect() {
+  $('#coSelect').innerHTML = DB.companies.map(c => `<option value="${c.id}"${c.id === DB.current ? ' selected' : ''}>${esc(c.name)}${c.symbol ? ' · ' + esc(c.symbol) : ''}</option>`).join('');
+}
+
+/* ========= 01 dashboard ========= */
+VIEWS.dash = {
+  render() {
+    const c = cur(); const R = revised(c); const cl = classify(c); const M = mother(c, R.eps); const S = signal(c, R, cl);
+    const price = num(c.price); const disc = (R.fv - price) / R.fv * 100;
+    const bv = num(c.equity) / num(c.shares);
+    const aiFv = Object.values(c.ai || {}).map(a => a && a.fv).filter(x => isFinite(x));
+    const loss = cl.primary === 'full' || cl.primary === 'partial';
+    return `${head(c.name + (c.symbol ? ' · ' + c.symbol : ''), `${esc(c.sector || 'القطاع غير محدد')} · التقييم على السنة المتوقعة +${R.n} وفق المعادلة المنقحة (ص68)`)}
+    <div class="stack">${exampleBanner(c)}${srcBar(c)}
+      <section class="plate">
+        <div class="a">
+          <div class="muted small">القيمة العادلة للسهم · المعادلة المنقحة</div>
+          <div class="big">${fmt(R.fv)}<small>﷼</small></div>
+          <div class="row gap" style="margin-top:10px">${cl.info ? chip(cl.info.t, cl.info.cls) : chip('التصنيف غير مكتمل')}${cl.activity ? chip(cl.activity, 'gold') : ''}${cl.history ? chip(cl.history) : ''}${cl.size ? chip(cl.size) : ''}${c.sharia === 'fail' ? chip('غير موافقة للضوابط الشرعية', 'down') : c.sharia === 'ok' ? chip('موافقة للضوابط الشرعية', 'up') : ''}</div>
+          <p class="small muted" style="margin:12px 0 0">المحرك الأساسي (ص14): ${loss ? 'الشركة في <b>ظروف الخسارة</b>، فمعيارها القيمة الدفترية' : 'الشركة في <b>ظروف الربح</b>، فمعيارها الربح المتوقع ونموه مقارنة بشركات العوائد'}.</p>
+        </div>
+        <div class="b">
+          <div class="kv"><div class="k">السعر الحالي</div><div class="v">${sar(price)}</div></div>
+          <div class="kv"><div class="k">${disc >= 0 ? 'خصم عن القيمة' : 'علاوة فوق القيمة'}</div><div class="v" style="color:var(${disc >= 0 ? '--up' : '--down'})">${pct(Math.abs(disc))}</div></div>
+          <div class="kv"><div class="k">ربحية السهم المتوقعة</div><div class="v">${sar(R.eps, 3)}</div></div>
+          <div class="kv"><div class="k">صافي الربح المتوقع</div><div class="v">${money(R.net)}</div></div>
+          <div class="kv"><div class="k">المعادلة الأم (متوسط المكرر ${fmt(M.A, 1)})</div><div class="v">${sar(M.fv)}</div></div>
+          <div class="kv"><div class="k">القيمة الدفترية (ظروف الخسارة)</div><div class="v">${sar(bv)}</div></div>
+          ${aiFv.length ? `<div class="kv"><div class="k">وسيط تقييمات الذكاء (${aiFv.length})</div><div class="v">${sar(median(aiFv))}</div></div>` : ''}
+          ${isFinite(M.fvLo) ? `<div class="kv"><div class="k">مدى التقييم بالمكررات</div><div class="v">${rng(M.fvLo, M.fvHi)}</div></div>` : ''}
+        </div>
+      </section>
+      <div class="signal ${S.s}"><div class="s">${esc(S.label)}</div><div><div>${esc(S.why)}</div>${S.rule ? `<div class="small muted">${esc(S.rule)}</div>` : ''}</div></div>
+      <div class="grid g2">
+        <section class="panel"><h2 class="st">مسار القيمة العادلة المتوقعة <span class="pg">ص67–68</span></h2><div class="chart-box"><canvas id="chFv"></canvas></div></section>
+        <section class="panel"><h2 class="st">مناطق الشراء والبيع <span class="pg">ص201، ص209</span></h2>${ladder(c, R)}</section>
+      </div>
+      <section class="panel"><h2 class="st">اكتمال البيانات</h2>${completeness(c, R, cl, M)}</section>
+    </div>`;
+  },
+  update() {
+    const c = cur(); const path = fvPath(c, 5); const price = num(c.price); const y0 = new Date().getFullYear();
+    const lbl = path.map((_, i) => i === 0 ? 'الحالي' : `+${i} (${y0 + i})`);
+    chart('chFv', { type: 'line', data: { labels: lbl, datasets: [
+      { label: 'القيمة العادلة', data: path, borderColor: css('--gold'), backgroundColor: css('--gold') + '22', fill: true, tension: .25, pointRadius: path.map((_, i) => i === revised(c).n ? 6 : 3), pointBackgroundColor: css('--gold2') },
+      { label: 'السعر الحالي', data: path.map(() => price), borderColor: css('--info'), borderDash: [6, 5], pointRadius: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { ticks: { callback: v => fmtRaw(v) } } } } });
+  }
+};
+function srcBar(c) {
+  const st = SAUDI.find(x => x.s === String(c.symbol)); if (!st) return '';
+  const running = c.aiStatus === 'run';
+  const n = Object.values(c.ai || {}).filter(e => e && isFinite(e.fv)).length;
+  return `<div class="row gap spread panel flat" style="padding:10px 14px"><span class="small">${running ? '<span class="dot run"></span> تبحث النماذج الآن عن بيانات السهم…' : c.adoptedFrom ? `البيانات المعتمدة من <b>${PROV[c.adoptedFrom].name}</b> (${SET.autoAdopt && SET.autoAdopt !== 'median' ? 'حسب إعدادك' : 'النموذج الأقرب لوسيط ' + n + ' نماذج'}) · ${new Date(c.adoptedAt).toLocaleString('ar-SA-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' })}` : 'لم يُحلَّل هذا السهم بعد.'}</span>
+    <span class="row gap"><button class="btn sm" data-act="mkAnalyze" data-s="${st.s}"${running ? ' disabled' : ''}>${c.adoptedFrom ? 'تحديث التحليل' : 'تحليل بالنماذج'}</button>${n ? '<button class="btn ghost sm" data-nav="ai">مقارنة النماذج</button>' : ''}</span></div>`;
+}
+function ladder(c, R) {
+  const fv = R.fv, entry = num(c.entryPrice), price = num(c.price);
+  if (!isFinite(fv)) return '<div class="empty">تظهر المناطق بعد حساب القيمة العادلة.</div>';
+  const r = (k, v, cls) => `<div class="rung ${cls}"><div class="k">${k}</div><div class="v">${fmt(v)}</div></div>`;
+  return `<div class="stack"><div><h3>من القيمة العادلة</h3><div class="ladder">
+    ${r('شراء: −25% (قاعدة العوائد)', fv * .75, 'buy')}${r('تعزيز: −50%', fv * .5, 'buy')}${r('القيمة العادلة', fv, '')}${r('بيع: +10% (قاعدة العوائد)', fv * 1.10, 'sell')}${r('تخفيف: +25%', fv * 1.25, 'sell')}</div></div>
+    ${isFinite(entry) ? `<div><h3>من متوسط شرائك ${fmt(entry)}</h3><div class="ladder">${r('تعزيز: −25%', entry * .75, 'buy')}${r('تعزيز: −50%', entry * .5, 'buy')}${r('جني: +25%', entry * 1.25, 'sell')}${r('جني: +50%', entry * 1.5, 'sell')}</div></div>` : '<p class="small muted">أدخل متوسط سعر الشراء في صفحة المحفظة لعرض مناطقه.</p>'}
+    ${isFinite(price) ? `<div class="small muted">السعر الحالي ${fmt(price)} = ${pct(price / fv * 100)} من القيمة العادلة</div><div class="bar"><i style="width:${Math.max(2, Math.min(100, price / fv / 1.5 * 100))}%"></i></div>` : ''}</div>`;
+}
+function completeness(c, R, cl, M) {
+  const items = [
+    ['منتجات بحجم سوق وحصة', R.valid.length > 0, 'revised'], ['هامش الربح', R.valid.some(r => !isNaN(r.mg)), 'revised'], ['عدد الأسهم', has(c.shares), 'revised'], ['السعر الحالي', has(c.price), 'revised'],
+    ['مكررات شركات العوائد', M.pes.length >= 2, 'mother'], ['اختبارات التصنيف', cl.tests.filter(t => t.known).length >= 4, 'classify'], ['القيم المضمّنة', Object.keys(c.implicit || {}).length >= 5, 'implicit']
+  ];
+  return `<div class="row gap">${items.map(([t, ok, v]) => `<button class="btn sm ${ok ? 'ghost' : 'ghost'}" data-nav="${v}" style="${ok ? 'border-color:var(--up);color:var(--up)' : ''}">${ok ? '✓' : '○'} ${esc(t)}</button>`).join('')}</div>`;
+}
+
+/* ========= 02 revised equation ========= */
+VIEWS.revised = {
+  render() {
+    const c = cur();
+    return `${head('المعادلة المنقحة', 'معادلة القيمة العادلة السردية كما في ص68: تعرّف على المنتجات، وحجم سوق كل منتج، وحصة الشركة منه، وهامش الربح؛ ثم اجمع، وطبّق الهامش، وأضف عوائد الاستثمارات، واقسم على عدد الأسهم، واضرب في 15. الخطوة 11: اعتمد البيانات المتوقعة من التقارير أو من أنماط نمو النتائج السابقة.')}
+    <div class="stack">${exampleBanner(c)}
+      <section class="panel"><h2 class="st">بيانات الشركة</h2>
+        <div class="fields">
+          ${fld('name', 'اسم الشركة', { text: 1 })}${fld('symbol', 'الرمز', { text: 1 })}${fld('sector', 'القطاع', { text: 1 })}
+          ${fld('price', 'السعر الحالي', { hint: 'ريال' })}${fld('shares', 'عدد الأسهم', { hint: 'يقبل: 500 مليون' })}
+          ${fld('margin', 'هامش ربح الشركة % (الخطوة 4)', { hint: 'يطبق على المنتجات بلا هامش خاص' })}
+          ${fld('invest', 'عوائد استثمارات الشركة (الخطوة 7)', { hint: 'سنوياً، ريال' })}${fld('ginv', 'نمو عوائد الاستثمار %')}
+          ${fld('multiplier', 'المضاعف (الخطوة 9)', { hint: 'ثابت المعادلة المنقحة = 15' })}
+          ${fld('projYears', 'سنة التقييم المتوقعة', { sel: [['0', 'الحالية (المحققة)'], ['1', '+1 سنة'], ['2', '+2'], ['3', '+3'], ['4', '+4'], ['5', '+5']] })}
+        </div>
+      </section>
+      <section class="panel"><h2 class="st">المنتجات والمتغيرات الثلاث <span class="pg">ص53–58</span></h2>
+        <p class="small muted" style="margin-top:-6px">ركّز على مصادر الدخل الأكثر مساهمة. نمو حجم السوق يُحسب تلقائياً من تاريخه (ص67) إن تركت خانة النمو فارغة. اترك هامش المنتج فارغاً لاستخدام هامش الشركة.</p>
+        <div class="tw"><table><thead><tr><th>المنتج</th><th>حجم السوق (آخر سنة)</th><th>تاريخ حجم السوق (الأقدم أولاً)</th><th>نمو الحجم %</th><th>الحصة السوقية %</th><th>نمو الحصة %</th><th>هامش المنتج %</th><th>نمو الهامش %</th><th></th></tr></thead>
+        <tbody>${c.products.map((p, i) => `<tr>
+          <td style="min-width:180px"><input type="text" data-b="products.${i}.name" value="${esc(p.name)}" aria-label="اسم المنتج"></td>
+          <td style="min-width:120px"><input class="n" data-b="products.${i}.ms" value="${esc(p.ms)}" aria-label="حجم السوق"></td>
+          <td style="min-width:200px"><input class="n" data-b="products.${i}.hist" value="${esc(p.hist)}" placeholder="3.3b, 3.5b, 3.7b" aria-label="تاريخ حجم السوق"></td>
+          <td style="min-width:80px"><input class="n" data-b="products.${i}.gms" value="${esc(p.gms)}" placeholder="تلقائي" aria-label="نمو الحجم"></td>
+          <td style="min-width:80px"><input class="n" data-b="products.${i}.share" value="${esc(p.share)}" aria-label="الحصة"></td>
+          <td style="min-width:75px"><input class="n" data-b="products.${i}.gsh" value="${esc(p.gsh)}" placeholder="0" aria-label="نمو الحصة"></td>
+          <td style="min-width:80px"><input class="n" data-b="products.${i}.margin" value="${esc(p.margin)}" placeholder="الشركة" aria-label="هامش المنتج"></td>
+          <td style="min-width:75px"><input class="n" data-b="products.${i}.gmg" value="${esc(p.gmg)}" placeholder="0" aria-label="نمو الهامش"></td>
+          <td><button class="btn ghost danger sm" data-act="delProduct" data-i="${i}" aria-label="حذف المنتج">✕</button></td></tr>`).join('')}</tbody></table></div>
+        <div class="row gap" style="margin-top:10px"><button class="btn ghost" data-act="addProduct">＋ منتج / مصدر دخل</button></div>
+      </section>
+      <div id="o-rev" class="stack"></div>
+    </div>`;
+  },
+  update() {
+    const c = cur(); const R = revised(c);
+    const st = (no, t, d, r, fin) => `<div class="step${fin ? ' final' : ''}"><div class="no">${no}</div><div><div class="t">${t}</div>${d ? `<div class="d">${d}</div>` : ''}</div><div class="r">${r}</div></div>`;
+    const names = R.valid.map(x => esc(x.p.name || 'منتج')).join('، ');
+    $('#o-rev').innerHTML = `<div class="grid g2">
+      <section class="panel"><h2 class="st">الخطوات بالترتيب <span class="pg">ص68</span></h2><div class="steps">
+        ${st(1, 'تعرّف على منتجات الشركة', names || 'لم تُدخل منتجات بعد', fmt(R.valid.length, 0) + ' منتج')}
+        ${st(2, 'حجم السوق لكل منتج', `السنة المتوقعة +${R.n}`, money(R.totalMS))}
+        ${st(3, 'الحصة السوقية للشركة لكل منتج', R.valid.map(x => pct(x.sh)).join(' · '), '')}
+        ${st(4, 'هامش ربح الشركة', R.valid.some(x => x.ownMargin) ? 'هوامش خاصة لبعض المنتجات' : 'هامش موحد', pct(R.blendedMargin))}
+        ${st(5, 'اجمع الحصص السوقية للشركة', 'Σ (حجم السوق × الحصة)', money(R.totalRev))}
+        ${st(6, 'طبّق عليه هامش الربح', '', money(R.totalProf))}
+        ${st(7, 'أضف عوائد استثمارات الشركة', money(R.inv), money(R.net))}
+        ${st(8, 'اقسم الناتج على عدد الأسهم', money(R.shares) + ' سهم', fmt(R.eps, 3))}
+        ${st(9, `اضرب الناتج في ${fmt(R.mult)}`, '', '× ' + fmt(R.mult))}
+        ${st(10, 'النتيجة هي القيمة العادلة للسهم', has(c.price) ? `السعر ${fmt(num(c.price))} · ${R.fv >= num(c.price) ? 'خصم' : 'علاوة'} ${pct(Math.abs((R.fv - num(c.price)) / R.fv * 100))}` : '', sar(R.fv), true)}
+      </div><p class="small muted" style="margin:10px 0 0">الخطوة 11: الأرقام أعلاه للسنة المتوقعة بعد تطبيق متوسط نمو المتغيرات الثلاث (ص67).</p></section>
+      <section class="panel"><h2 class="st">مساهمة كل مصدر في الإيرادات <span class="pg">ص47</span></h2><div class="chart-box"><canvas id="chMix"></canvas></div></section>
+    </div>
+    <section class="panel"><h2 class="st">تفصيل المنتجات للسنة المتوقعة</h2><div class="tw"><table><thead><tr><th>المنتج</th><th class="n">نمو الحجم</th><th class="n">حجم السوق</th><th class="n">الحصة</th><th class="n">الإيراد</th><th class="n">الهامش</th><th class="n">الربح</th><th class="n">المساهمة</th></tr></thead>
+      <tbody>${R.rows.map(x => `<tr><td>${esc(x.p.name || '—')}</td><td class="n">${pct(x.g1)}</td><td class="n">${money(x.ms)}</td><td class="n">${pct(x.sh)}</td><td class="n">${money(x.rev)}</td><td class="n">${pct(x.mg)}</td><td class="n">${money(x.prof)}</td><td class="n">${pct(x.prof / R.net * 100)}</td></tr>`).join('')}
+      <tr><td>عوائد الاستثمارات</td><td class="n">${pct(nz(c.ginv))}</td><td></td><td></td><td></td><td></td><td class="n">${money(R.inv)}</td><td class="n">${pct(R.inv / R.net * 100)}</td></tr></tbody>
+      <tfoot><tr><td>المجموع</td><td></td><td class="n">${money(R.totalMS)}</td><td></td><td class="n">${money(R.totalRev)}</td><td class="n">${pct(R.blendedMargin)}</td><td class="n">${money(R.net)}</td><td class="n">100%</td></tr></tfoot></table></div></section>`;
+    const labels = [...R.valid.map(x => x.p.name || 'منتج'), 'عوائد الاستثمارات'];
+    const data = [...R.valid.map(x => Math.max(0, x.prof)), Math.max(0, R.inv)];
+    const pal = [css('--gold'), css('--info'), css('--up'), css('--warn'), css('--down'), css('--gold2'), css('--muted')];
+    chart('chMix', { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => pal[i % pal.length]), borderColor: css('--panel'), borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: t => `${t.label}: ${money(t.raw).replace(/[\u2066\u2069]/g, "")}` } } } } });
+  }
+};
+
+/* ========= 03 mother equation & P/E ========= */
+VIEWS.mother = {
+  render() {
+    const c = cur();
+    return `${head('المعادلة الأم ومكررات شركات العوائد', 'القيمة العادلة = متوسط مكرر شركات العوائد الثابتة × متوسط الربحية النهائية المستمرة للسهم (ص16). المكرر = سعر السهم ÷ ربحيته، أي عدد السنوات التي يتكرر فيها الربح ليعطي السعر نفسه (ص60).')}
+    <div class="stack">
+      <section class="panel"><h2 class="st">شركات العوائد <span class="pg">ص60–65</span></h2>
+        <p class="small muted" style="margin-top:-6px">السعر: المتوسط المتحرك البسيط 200 يوم لثلاث سنوات (تك تشارت). الربحية: (صافي الدخل − الإيرادات الأخرى) ÷ عدد الأسهم؛ إن تركت خانة الربحية فارغة تُحسب من الأعمدة التالية.</p>
+        <div class="tw"><table><thead><tr><th>الشركة</th><th>متوسط السعر (200 يوم)</th><th>ربحية السهم</th><th>صافي الدخل</th><th>الإيرادات الأخرى</th><th>عدد الأسهم</th><th></th></tr></thead>
+        <tbody>${(c.peers || []).map((p, i) => `<tr>
+          <td style="min-width:160px"><input type="text" data-b="peers.${i}.name" value="${esc(p.name)}" aria-label="اسم الشركة"></td>
+          <td><input class="n" data-b="peers.${i}.price" value="${esc(p.price)}" aria-label="السعر"></td>
+          <td><input class="n" data-b="peers.${i}.eps" value="${esc(p.eps)}" aria-label="الربحية"></td>
+          <td><input class="n" data-b="peers.${i}.ni" value="${esc(p.ni || '')}" aria-label="صافي الدخل"></td>
+          <td><input class="n" data-b="peers.${i}.oi" value="${esc(p.oi || '')}" aria-label="الإيرادات الأخرى"></td>
+          <td><input class="n" data-b="peers.${i}.sh" value="${esc(p.sh || '')}" aria-label="عدد الأسهم"></td>
+          <td><button class="btn ghost danger sm" data-act="delPeer" data-i="${i}" aria-label="حذف">✕</button></td></tr>`).join('') || `<tr><td colspan="7" class="muted">لا توجد شركات عوائد بعد.</td></tr>`}</tbody></table></div>
+        <div class="row gap" style="margin-top:10px"><button class="btn ghost" data-act="addPeer">＋ شركة عوائد</button></div>
+      </section>
+      <div id="o-mother"></div>
+    </div>`;
+  },
+  update() {
+    const c = cur();
+    (c.peers || []).forEach(p => { if (!has(p.eps) && has(p.ni) && has(p.sh)) p._eps = (num(p.ni) - nz(p.oi)) / num(p.sh); else p._eps = undefined; });
+    const cc = Object.assign({}, c, { peers: (c.peers || []).map(p => Object.assign({}, p, { eps: has(p.eps) ? p.eps : p._eps })) });
+    const R = revised(c); const M = mother(cc, R.eps);
+    $('#o-mother').innerHTML = `<div class="grid g2">
+      <section class="panel"><h2 class="st">النتيجة</h2>
+        <div class="formula ar">A (متوسط المكرر) × B (الربحية النهائية المستمرة من المعادلة المنقحة) = القيمة العادلة</div>
+        <div class="outs">${[o('A — متوسط مكرر شركات العوائد', M.A, 'num'), o('B — ربحية السهم المتوقعة', R.eps, 'sar'), o('القيمة العادلة بالمعادلة الأم', M.fv, 'sar', 'info'),
+          o('القيمة العادلة بالمعادلة المنقحة (× 15)', R.fv, 'sar', 'info'), o('أقل مكرر / أعلى مكرر', rng(M.lo, M.hi), 'text'),
+          o('مدى التقييم (أعلى − أقل مكرر)', M.range, 'num', '', 'الطريقة الرابعة (ص12): التداول على فرق السعر داخل هذا المدى'),
+          o('حدود السعر داخل المدى', `${rng(M.fvLo, M.fvHi)} ﷼`, 'text')].map(outRow).join('')}</div>
+        <p class="small muted">المعادلة المنقحة ثبّتت المضاعف عند 15 بدلاً من متوسط المكرر المتغير؛ لذا يُعرض هنا الرقمان للمقارنة.</p></section>
+      <section class="panel"><h2 class="st">مكرر كل شركة <span class="pg">ص64</span></h2><div class="chart-box sm"><canvas id="chPE"></canvas></div>
+        <div class="tw" style="margin-top:10px"><table><thead><tr><th>الشركة</th><th class="n">الربحية</th><th class="n">المكرر</th></tr></thead><tbody>${M.pes.map(x => `<tr><td>${esc(x.p.name)}</td><td class="n">${fmt(num(x.p.eps), 3)}</td><td class="n">${fmt(x.pe, 2)}</td></tr>`).join('')}</tbody></table></div></section></div>`;
+    chart('chPE', { type: 'bar', data: { labels: M.pes.map(x => x.p.name), datasets: [{ label: 'المكرر', data: M.pes.map(x => x.pe), backgroundColor: css('--gold') }, { type: 'line', label: 'المتوسط', data: M.pes.map(() => M.A), borderColor: css('--info'), borderDash: [5, 4], pointRadius: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } });
+  }
+};
+
+/* ========= 04 classification ========= */
+VIEWS.classify = {
+  render() {
+    const c = cur();
+    return `${head('تصنيف الشركة', 'يساعد التصنيف على اختيار الشركة الموافقة لأهدافك (ص20): بحسب البيانات المالية والتاريخ والحجم والنشاط، بعد استبعاد غير الموافقة للضوابط الشرعية.')}
+    <div class="stack">
+      <section class="panel"><h2 class="st">آخر سنة مالية</h2><div class="fields">
+        ${fld('equity', 'إجمالي حقوق المساهمين')}${fld('capital', 'رأس المال المدفوع')}${fld('shares', 'عدد الأسهم')}${fld('nominal', 'القيمة الاسمية', { hint: 'عادة 10 ريال' })}
+        ${fld('netIncome', 'صافي الدخل')}${fld('otherIncome', 'الإيرادات الأخرى')}${fld('capIncreases', 'عدد زيادات رأس المال')}${fld('founded', 'سنة التأسيس')}
+        ${fld('sectorAvgCapital', 'متوسط رأس مال القطاع')}${fld('activity', 'النشاط', { sel: ['', 'دفاعية', 'دورية', 'واعدة', 'كمالية'] })}
+        ${fld('sharia', 'الضوابط الشرعية', { sel: [['unknown', 'لم يُتحقق'], ['ok', 'موافقة'], ['fail', 'غير موافقة (نشاط محرم أو تكلفة تمويل ربوية)']] })}
+      </div></section>
+      <section class="panel"><h2 class="st">البيانات التاريخية <span class="pg">الأقدم أولاً، مفصولة بفواصل</span></h2><div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+        ${fld('hist.years', 'السنوات', { ph: '2021, 2022, 2023, 2024, 2025' })}${fld('hist.revenue', 'المبيعات / الإيرادات')}${fld('hist.netIncome', 'صافي الدخل')}${fld('hist.otherIncome', 'الإيرادات الأخرى')}${fld('hist.equity', 'حقوق المساهمين')}${fld('hist.dps', 'توزيعات السهم')}
+        ${fld('q.net', 'صافي الدخل لآخر 4 أرباع', { hint: 'لاختبار الانكماش ص30' })}${fld('q.other', 'الإيرادات الأخرى لآخر 4 أرباع')}
+      </div></section>
+      <div id="o-cls"></div>
+    </div>`;
+  },
+  update() {
+    const c = cur(); const cl = classify(c);
+    const method = { dividend: 'الطريقة الأولى (ص12): الشراء للاستفادة من العوائد، والبيع عند توقف التوزيعات. والطريقة الرابعة: التداول داخل مدى التقييم.', growth: 'الطريقة الثانية (ص12): الشراء للاستفادة من نمو الأرباح، والبيع عند توقف النمو.', cyclical: 'الطريقة الثالثة (ص12): الشراء دون القيمة العادلة والبيع عند تعادل السعر معها؛ حدود سعرية شبه محسوبة.', shrink: 'الحذر: تُراقب القيمة العادلة المتوقعة، وتُباع إن تناقصت (ص209).', partial: 'نمو الأرباح الرأسمالية إن تحولت للربح، بمخاطرة مرتفعة.', full: 'تجنيب المال لاحتمالية الإفلاس، ومقابلها احتمالية مضاعفة رأس المال إن تحولت للربح.' };
+    $('#o-cls').innerHTML = `<div class="grid g2">
+      <section class="panel"><h2 class="st">النتيجة</h2>
+        ${cl.info ? `<div class="signal ${cl.info.cls === 'up' ? 'buy' : cl.info.cls === 'down' ? 'sell' : 'hold'}"><div class="s" style="font-size:18px;min-width:auto">${esc(cl.info.t)}</div><div class="small">${esc(cl.info.d)} <span class="faint">${cl.info.page}</span></div></div>` : '<div class="empty">أدخل البيانات لتظهر نتيجة التصنيف.</div>'}
+        <div class="outs">${[o('حسب التاريخ (ص35)', cl.history || '—', 'text'), o('حسب الحجم (ص36)', cl.size || '—', 'text', '', 'الحجم ذو علاقة عكسية مع المخاطرة'), o('حسب النشاط (ص37–38)', cl.activity || '—', 'text'),
+          o('الضوابط الشرعية (ص24–25)', c.sharia === 'ok' ? 'موافقة' : c.sharia === 'fail' ? 'غير موافقة: تُستبعد' : 'لم يُتحقق', 'text', c.sharia === 'ok' ? 'up' : c.sharia === 'fail' ? 'down' : 'warn')].map(outRow).join('')}</div>
+        ${cl.primary ? `<p class="small" style="margin-top:12px"><b>طريقة الانتفاع المناسبة:</b> ${esc(method[cl.primary])}</p>` : ''}
+      </section>
+      <section class="panel"><h2 class="st">الاختبارات</h2>${cl.tests.map(t => `<div class="check"><span class="chip ${!t.known ? '' : t.pass ? 'gold' : ''}" style="min-width:56px;justify-content:center">${!t.known ? 'ناقص' : t.pass ? 'ينطبق' : 'لا'}</span><div><div>${esc(t.name)} <span class="faint small">${t.page}</span></div><div class="small muted">${esc(t.detail)}</div></div></div>`).join('')}</section>
+    </div>
+    <section class="panel" style="margin-top:16px"><h2 class="st">النشاط والقطاع <span class="pg">ص38</span></h2><div class="tw"><table><thead><tr><th>التصنيف</th><th>الصفة</th><th>أمثلة القطاعات</th></tr></thead><tbody>
+      <tr><td>دفاعية</td><td>لا تتأثر كثيراً بالتقلبات الاقتصادية</td><td>التغذية والصحة</td></tr><tr><td>دورية</td><td>تتقلب بين ارتفاع الربح وانخفاضه</td><td>الأسمنت والمواد الأساسية والخام</td></tr>
+      <tr><td>واعدة</td><td>تساهم في التوجيه البشري</td><td>التقنية</td></tr><tr><td>كمالية</td><td>تزدهر أوقات الرخاء</td><td>التجزئة والسلع غير الأساسية كالعطور والزينة</td></tr></tbody></table></div></section>`;
+  }
+};
+
+/* ========= 05 deep analysis ========= */
+const PREFILL = { opProfit: { ni: 'netIncome', oi: 'otherIncome', sh: 'shares' }, equity: { ta: 'totalAssets', li: 'liabilities', sh: 'shares' }, capExp: { sh: 'shares', mg: 'margin' }, finCosts: { sh: 'shares', ta: 'totalAssets' }, invCosts: { sh: 'shares' }, capab: { ta: 'totalAssets', li: 'liabilities' }, margin: {} };
+VIEWS.deep = {
+  render() {
+    const c = cur(); c.deep = c.deep || {};
+    return `${head('التحليل العميق', 'حاسبات لكل علاقة حسابية في الفصل الأول (تأكيد التصنيف) والفصل الثاني (حجم السوق، الحصة السوقية، هامش الربحية). كل مخرج يحمل حكمه وفق العلاقة المذكورة في الكتاب. تقبل الخانات صيغاً مثل 4 مليار أو 250m.')}
+    <div class="stack">${CALC_GROUPS.map((g, gi) => `<details class="acc"${gi === 0 ? ' open' : ''}><summary><span>${esc(g.t)} <span class="small muted" style="font-family:var(--f-body)">· ${esc(g.sub)}</span></span></summary><div class="in"><div class="grid g2">
+      ${CALCS.filter(k => k.grp === g.id).map(k => `<section class="panel flat calc"><h3><span>${esc(k.t)}</span><span class="pg">${k.page}</span></h3>
+        <div class="formula ar small" style="margin-bottom:10px">${esc(k.f)}</div>${k.note ? `<p class="small muted" style="margin:0 0 8px">${esc(k.note)}</p>` : ''}
+        <div class="fields">${k.in.map(([key, lab, kind, opts]) => fld(`deep.${k.id}.${key}`, lab, kind === 'sel' ? { sel: opts } : kind === 'date' ? { type: 'date', text: 1 } : kind === 'wide' ? { cls: 'wide' } : {})).join('')}</div>
+        ${PREFILL[k.id] && Object.keys(PREFILL[k.id]).length ? `<button class="btn ghost sm" style="margin-top:8px" data-act="prefill" data-id="${k.id}">تعبئة من بيانات الشركة</button>` : ''}
+        <div class="outs" id="o-c-${k.id}"></div></section>`).join('')}
+    </div></div></details>`).join('')}</div>`;
+  },
+  update() {
+    const c = cur();
+    CALCS.forEach(k => { const el = document.getElementById('o-c-' + k.id); if (!el) return; const v = (c.deep && c.deep[k.id]) || {}; let rows = []; try { rows = k.run(v); } catch (e) { rows = []; } el.innerHTML = rows.map(outRow).join(''); });
+  }
+};
+
+/* ========= 06 indicators ========= */
+VIEWS.ind = {
+  render() {
+    const c = cur(); c.ind = c.ind || {}; const I = IND.find(x => x.id === UI.ind) || IND[0];
+    c.ind[I.id] = c.ind[I.id] || { start: String(new Date().getFullYear() - 5), vals: '', proj: '2' };
+    return `${head('متتبع المؤشرات', `كل رسم «مؤشر» في الكتاب (${IND.length} مؤشراً) بقيمه المحققة، والمتوقعة بتطبيق متوسط النمو (ص67)، والحكم وفق علاقته.`)}
+    <div class="stack"><section class="panel"><div class="fields" style="grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr))">
+      <div class="f"><label for="indSel">المؤشر</label><select id="indSel">${IND.map(x => `<option value="${x.id}"${x.id === I.id ? ' selected' : ''}>${esc(x.t)} · ${x.page}${c.ind[x.id] && arr(c.ind[x.id].vals).length ? ' ●' : ''}</option>`).join('')}</select></div>
+      ${fld(`ind.${I.id}.start`, 'أول سنة محققة')}${fld(`ind.${I.id}.proj`, 'سنوات متوقعة')}
+      ${fld(`ind.${I.id}.vals`, 'القيم المحققة (الأقدم أولاً)', { cls: 'wide', ph: '120, 135, 150, 170' })}</div>
+      <p class="small muted" style="margin:8px 0 0">العلاقة: <b>${esc(REL_TXT[I.rel])}</b></p></section>
+      <div id="o-ind"></div></div>`;
+  },
+  update() {
+    const c = cur(); const I = IND.find(x => x.id === UI.ind) || IND[0]; const d = c.ind[I.id] || {};
+    const vals = arr(d.vals); const P = project(vals, Math.max(0, Math.min(10, nz(d.proj)))); const y0 = nz(d.start) || new Date().getFullYear() - vals.length;
+    const labels = [...vals.map((_, i) => String(y0 + i)), ...P.out.map((_, i) => String(y0 + vals.length + i))];
+    const ev = indEval(I, vals);
+    $('#o-ind').innerHTML = `<div class="grid g2"><section class="panel"><h2 class="st">${esc(I.t)} <span class="pg">${I.page}</span></h2><div class="chart-box"><canvas id="chInd"></canvas></div></section>
+      <section class="panel"><h2 class="st">القراءة</h2><div class="outs">${[o('متوسط النمو السنوي', P.g, 'pct'), o('آخر قيمة محققة', vals[vals.length - 1], 'num'), ...P.out.map((v, i) => o(`المتوقع ${y0 + vals.length + i}`, v, 'num')), o('الحكم', ev.t, 'text', ev.st)].map(outRow).join('')}</div></section></div>
+      <section class="panel" style="margin-top:16px"><h2 class="st">ملخص المؤشرات المدخلة</h2>${indSummary(c)}</section>`;
+    chart('chInd', { type: 'bar', data: { labels, datasets: [{ label: 'محقق', data: [...vals, ...P.out.map(() => null)], backgroundColor: css('--gold') }, { label: 'متوقع', data: [...vals.map(() => null), ...P.out], backgroundColor: css('--gold') + '55', borderColor: css('--gold'), borderWidth: 1, borderDash: [4, 3] }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { ticks: { callback: v => fmtRaw(v) } } } } });
+  }
+};
+function indEval(I, vals) {
+  if (vals.length < 2 && I.rel !== '<100') return { t: 'يحتاج قيمتين على الأقل', st: '' };
+  const g = avgGrowth(vals); const last = vals[vals.length - 1];
+  if (I.rel === '+') return g >= 0 ? { t: 'في ارتفاع: إيجابي', st: 'up' } : { t: 'في انخفاض: سلبي', st: 'down' };
+  if (I.rel === '-') return g <= 0 ? { t: 'في انخفاض: إيجابي', st: 'up' } : { t: 'في ارتفاع: سلبي', st: 'down' };
+  if (I.rel === '<100') return isNaN(last) ? { t: '—', st: '' } : last < 100 ? { t: 'أقل من 100%: إيجابي', st: 'up' } : { t: '100% فأكثر: سلبي', st: 'down' };
+  if (I.id === 'capital') return { t: 'في شركات النمو يعد صغر رأس المال إيجابياً، وفي شركات العوائد كبره', st: 'info' };
+  return { t: g >= 0 ? 'في ارتفاع' : 'في انخفاض', st: 'info' };
+}
+function indSummary(c) {
+  const rows = IND.filter(I => c.ind && c.ind[I.id] && arr(c.ind[I.id].vals).length);
+  if (!rows.length) return '<div class="empty">لم تُدخل قيم لأي مؤشر بعد. اختر مؤشراً وأدخل قيمه المحققة.</div>';
+  const ev = rows.map(I => ({ I, e: indEval(I, arr(c.ind[I.id].vals)) }));
+  const up = ev.filter(x => x.e.st === 'up').length, down = ev.filter(x => x.e.st === 'down').length;
+  return `<div class="row gap" style="margin-bottom:10px">${chip(up + ' إيجابي', 'up')}${chip(down + ' سلبي', 'down')}</div><div class="tw"><table><thead><tr><th>المؤشر</th><th>الصفحة</th><th class="n">متوسط النمو</th><th>الحكم</th></tr></thead><tbody>${ev.map(x => `<tr><td><button class="btn ghost sm" data-act="pickInd" data-id="${x.I.id}">${esc(x.I.t)}</button></td><td class="faint">${x.I.page}</td><td class="n">${pct(avgGrowth(arr(c.ind[x.I.id].vals)))}</td><td>${chip(x.e.t, x.e.st)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ========= 07 implicit values ========= */
+VIEWS.implicit = {
+  render() {
+    const c = cur(); c.implicit = c.implicit || {};
+    return `${head('القيم المضمّنة', 'قيم تدخل في تقييم السهم ضمن المتغيرات السابقة، ولا تنفرد بقيمة إضافية؛ إنما تضفي على نتائج التحليل مصداقية أكبر (ص185). لذلك تُعرض هنا درجةَ ثقة بالتقييم ولا تغيّر القيمة العادلة.')}
+    <div class="grid g2">${IMPLICIT.map(a => `<section class="panel"><h2 class="st">${esc(a.t)} <span class="pg">${a.page}</span></h2>
+      ${a.items.map(([k, t]) => `<div class="check" style="align-items:center;justify-content:space-between"><div class="small" style="flex:1">${esc(t)}</div><div class="score" role="group" aria-label="${esc(t)}">${[1, 2, 3, 4, 5].map(n => `<button data-act="score" data-k="${k}" data-n="${n}" class="${c.implicit[k] == n ? 'on' : ''}" aria-pressed="${c.implicit[k] == n}">${n}</button>`).join('')}</div></div>`).join('')}
+      ${a.id === 'co' ? `<div style="margin-top:10px">${fld('implicit.custType', 'ثقافة عميل الشركة (ص193)', { sel: ['', 'عميل الجوهر (السعر الأقل والجودة الأعلى)', 'عميل المظهر (السعر الأعلى والشكل الأجمل)'] })}</div>` : ''}</section>`).join('')}
+      <section class="panel" id="o-imp"></section></div>`;
+  },
+  update() {
+    const c = cur(); const im = c.implicit || {};
+    const axes = IMPLICIT.map(a => { const sc = a.items.map(([k]) => num(im[k])).filter(x => !isNaN(x)); return { a, v: sc.length ? avg(sc) : NaN, n: sc.length, tot: a.items.length }; });
+    const all = axes.filter(x => !isNaN(x.v)); const conf = all.length ? avg(all.map(x => x.v)) / 5 * 100 : NaN;
+    $('#o-imp').innerHTML = `<h2 class="st">درجة الثقة بالتقييم</h2><div class="big" style="font-size:44px">${isNaN(conf) ? '—' : fmt(conf, 0)}<small>%</small></div>
+      <p class="small muted">${isNaN(conf) ? 'قيّم البنود من 1 إلى 5.' : conf >= 75 ? 'بيئة داعمة: نتائج المعادلة أكثر مصداقية.' : conf >= 50 ? 'بيئة متوسطة: راجع افتراضات النمو بتحفظ.' : 'بيئة ضعيفة: اعتمد هامش أمان أوسع من 25%.'}</p>
+      <div class="stack" style="gap:10px">${axes.map(x => `<div><div class="row spread small"><span>${esc(x.a.t)}</span><span class="mono">${isNaN(x.v) ? '—' : fmt(x.v, 1) + ' / 5'}</span></div><div class="bar"><i style="width:${isNaN(x.v) ? 0 : x.v / 5 * 100}%"></i></div></div>`).join('')}</div>
+      <p class="small muted" style="margin-top:12px">للتحقق من اعتماد شركة الوساطة (ص196): هيئة السوق المالية ← القائمة الرئيسية ← السوق المالية ← مؤسسات السوق المالية ← اكتب اسم المؤسسة.</p>`;
+  }
+};
+
+/* ========= 08 portfolio & deals ========= */
+const INVEST_CHECKS = [
+  ['logic', 'أستطيع التعامل المنطقي الرقمي لا العاطفي مع الأسهم'], ['basic', 'أشبعت المستويات الأولية من خارج سوق الأسهم (وظيفة أو تجارة)'],
+  ['best', 'سوق الأسهم هو الخيار الأكثر جدوى بعد خصم نسبة المخاطرة مقارنة بالطرق الأقل مخاطرة'], ['surplus', 'أدخل بمبلغ فائض عن حاجتي وغير مؤثر على حياتي الشخصية في حال فقدانه']
+];
+VIEWS.portfolio = {
+  render() {
+    const c = cur();
+    return `${head('المحفظة والصفقات', 'النجاح في أسواق المال يعتمد على مهارة إدارة المحفظة بجانب مهارة التقييم العادل للسهم (ص201).')}
+    <div class="stack"><div class="grid g2">
+      <section class="panel"><h2 class="st">شروط الاستثمار <span class="pg">ص11</span></h2>${INVEST_CHECKS.map(([k, t]) => `<label class="check"><input type="checkbox" data-act="investCheck" data-k="${k}"${SET.investChecks[k] ? ' checked' : ''}><span>${esc(t)}</span></label>`).join('')}</section>
+      <section class="panel"><h2 class="st">توزيع السيولة <span class="pg">ص208</span></h2><div class="fields">${fld('liquidity', 'إجمالي السيولة المخصصة', { scope: 's' })}${fld('entryPrice', 'متوسط سعر شرائك لهذه الشركة')}${fld('priceGrowth', 'نمو سعر السهم السنوي %', { hint: 'لقاعدة شركات النمو ص209' })}</div>
+        <label class="check"><input type="checkbox" data-act="growthConfirmed"${SET.growthConfirmed ? ' checked' : ''}><span>تأكد نمو هذه الشركة (يرفع الحد الأعلى للشركة الواحدة إلى 30%)</span></label><div id="o-alloc"></div></section></div>
+      <div class="grid g2"><section class="panel"><h2 class="st">مذكرة التداول <span class="pg">ص209</span></h2>
+        <h3 style="color:var(--up)">اشترِ إذا كان</h3><ul class="small"><li>شركة نمو (وإن كانت خاسرة الفترة الماضية) + سعر ينمو بنفس وتيرة نمو القيمة العادلة</li><li>شركة عوائد + قيمة عادلة ثابتة + سعر أقل من القيمة العادلة بـ25%</li><li>شركة عوائد + قيمة عادلة ثابتة + سعر أقل من متوسط الشراء بـ25%</li></ul>
+        <h3 style="color:var(--down)">بِع إذا كان</h3><ul class="small"><li>شركة نمو + سعر ينمو بأكثر من نسبة نمو القيمة العادلة</li><li>شركة عوائد + قيمة عادلة ثابتة + سعر أكثر من القيمة العادلة بـ10%</li><li>شركة انكماش + قيمة عادلة تتناقص (بناءً على البيانات المتوقعة)</li></ul><div id="o-sig"></div></section>
+      <section class="panel"><h2 class="st">نصائح إدارة المحفظة <span class="pg">ص201</span></h2><ol class="small" style="padding-inline-start:20px;margin:0;line-height:2">
+        <li>الدخول بمال غير مؤثر في الحياة الشخصية</li><li>تنويع الشركات تصنيفياً والأسواق جغرافياً</li><li>تنويع مناطق الشراء والبيع كل 25% من سعر الصفقة أو سعر القيمة العادلة</li><li>إعادة تقييم السهم مع كل خبر يخص الشركة</li><li>الاحتفاظ بسيولة مقاربة لقيمة الأسهم</li><li>تنويع الأهداف وطرق الربح</li></ol>
+        <h3 style="margin-top:14px">أهداف التداول وطرق الانتفاع <span class="pg">ص12</span></h3><ol class="small" style="padding-inline-start:20px;margin:0;line-height:1.9"><li>شراء السهم لعوائده، والبيع عند توقف التوزيعات</li><li>شراء السهم لنمو أرباحه، والبيع عند توقف النمو</li><li>الشراء عند انخفاضه عن قيمته العادلة، والبيع عند تعادلهما</li><li>التداول على فرق السعر داخل مدى التقييم الناتج عن الأخبار أو التحليل الفني</li></ol></section></div>
+      <section class="panel"><h2 class="st">مذكرة الصفقات <span class="pg">ص213</span></h2><div class="tw"><table><thead><tr><th>السهم</th><th>العدد</th><th>سعر الشراء</th><th>تم الشراء</th><th>سعر البيع</th><th>تم البيع</th><th class="n">الربح</th><th></th></tr></thead><tbody>
+        ${DB.deals.map((d, i) => `<tr><td><input type="text" data-g="deals.${i}.stock" value="${esc(d.stock)}" aria-label="السهم"></td><td><input class="n" data-g="deals.${i}.qty" value="${esc(d.qty)}" aria-label="العدد"></td><td><input class="n" data-g="deals.${i}.buy" value="${esc(d.buy)}" aria-label="سعر الشراء"></td>
+          <td><input type="checkbox" data-act="dealFlag" data-i="${i}" data-k="bought"${d.bought ? ' checked' : ''} aria-label="تم الشراء"></td><td><input class="n" data-g="deals.${i}.sell" value="${esc(d.sell)}" aria-label="سعر البيع"></td>
+          <td><input type="checkbox" data-act="dealFlag" data-i="${i}" data-k="sold"${d.sold ? ' checked' : ''} aria-label="تم البيع"></td><td class="n" id="o-deal-${i}"></td><td><button class="btn ghost danger sm" data-act="delDeal" data-i="${i}" aria-label="حذف">✕</button></td></tr>`).join('') || '<tr><td colspan="8" class="muted">لا توجد صفقات مسجلة.</td></tr>'}</tbody></table></div>
+        <div class="row gap" style="margin-top:10px"><button class="btn ghost" data-act="addDeal">＋ صفقة</button><span id="o-deals" class="small muted"></span></div></section></div>`;
+  },
+  update() {
+    const c = cur(); const L = num(SET.liquidity); const price = num(c.price); const R = revised(c); const cl = classify(c); const S = signal(c, R, cl);
+    const cap = SET.growthConfirmed ? 0.30 : 0.05;
+    $('#o-alloc').innerHTML = `<div class="outs">${[o('ربع للأسهم الآن', L * .25, 'money'), o('ربع للتعديل بعد هبوط 30%', L * .25, 'money'), o('نصف للفرص النادرة', L * .5, 'money'),
+      o(`الحد الأعلى لهذه الشركة (${cap * 100}% من المحفظة)`, L * cap, 'money'), o('عدد الأسهم الممكن عند السعر الحالي', Math.floor(L * cap / price), 'num')].map(outRow).join('')}</div>`;
+    $('#o-sig').innerHTML = `<div class="signal ${S.s}" style="margin-top:8px"><div class="s">${esc(S.label)}</div><div class="small">${esc(c.name)}: ${esc(S.why)}</div></div>`;
+    let tot = 0; DB.deals.forEach((d, i) => { const p = (num(d.sell) - num(d.buy)) * num(d.qty); const el = document.getElementById('o-deal-' + i); if (el) el.innerHTML = isNaN(p) ? '—' : `<span style="color:var(${p >= 0 ? '--up' : '--down'})">${fmt(p)}</span>`; if (d.sold && !isNaN(p)) tot += p; });
+    const od = $('#o-deals'); if (od) od.textContent = DB.deals.length ? `مجموع الأرباح المحققة: ${fmt(tot)} ﷼` : '';
+  }
+};
+
+/* ========= 09 schedule ========= */
+function periodKey(p) {
+  const d = new Date(); const y = d.getFullYear(), m = d.getMonth() + 1; const q = Math.ceil(m / 3);
+  const wk = Math.ceil(((d - new Date(y, 0, 1)) / 864e5 + new Date(y, 0, 1).getDay() + 1) / 7);
+  return { 'يومي': d.toISOString().slice(0, 10), 'أسبوعي': `${y}-w${wk}`, 'شهري': `${y}-${m}`, 'دوري': `${y}-${m}`, 'ربع سنوي': `${y}-q${q}`, 'نصف سنوي': `${y}-h${m <= 6 ? 1 : 2}`, 'سنوي': `${y}` }[p];
+}
+VIEWS.schedule = {
+  render() {
+    const d = new Date(); const m = d.getMonth(); const q = Math.floor(m / 3); const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    const extra = { 2: ' + ربع سنوية + سنوية', 5: ' + ربع سنوية', 8: ' + ربع سنوية + نصف سنوية', 11: ' + ربع سنوية' };
+    const wom = Math.min(5, Math.ceil(d.getDate() / 7));
+    const qm = [q * 3, q * 3 + 1, q * 3 + 2];
+    return `${head('جدول الأعمال', 'المهام الدورية من جداول العمل (ص212–217). علامات الإنجاز تُصفّر تلقائياً مع بداية كل فترة جديدة. الأعمال اليومية جزء من يومك ولا تحتاج إلى تذكير.')}
+    <div class="stack"><div class="grid g3">${SCHEDULE.map(s => { const key = periodKey(s.p); const st = (DB.schedule[s.p] && DB.schedule[s.p].key === key) ? DB.schedule[s.p].done : {};
+      return `<section class="panel"><h2 class="st">${esc(s.p)}</h2>${s.items.map((it, i) => `<label class="check"><input type="checkbox" data-act="sched" data-p="${esc(s.p)}" data-i="${i}"${st[i] ? ' checked' : ''}><span class="small">${esc(it)}</span></label>`).join('')}</section>`; }).join('')}</div>
+      <section class="panel"><h2 class="st">مذكّر أعمال الربع ${['الأول', 'الثاني', 'الثالث', 'الرابع'][q]} <span class="pg">ص214–217</span></h2>
+        <div class="tw"><table><thead><tr><th>الأسبوع</th>${qm.map(i => `<th>${months[i]}</th>`).join('')}</tr></thead><tbody>
+        ${[1, 2, 3, 4, 5].map(w => `<tr><td>${['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس'][w - 1]}</td>${qm.map(mi => { const now = mi === m && w === wom; const txt = w === 1 ? 'الأسبوعية + الشهرية + الدورية' : w === 5 && extra[mi] ? 'الأسبوعية' + extra[mi] : 'الأسبوعية'; return `<td class="small" style="${now ? 'background:var(--warnBg);font-weight:600' : ''}">${now ? '◀ ' : ''}${txt}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div></section></div>`;
+  }
+};
+
+/* ========= reference ========= */
+VIEWS.ref = {
+  render() {
+    return `${head('مرجع المعادلات', `كل معادلة وقاعدة حسابية في الكتاب (${REF.length} بنداً) مع موضعها، ومكان تطبيقها في التطبيق.`)}
+    <section class="panel">${REF.map(([t, p, f, n]) => `<div class="ref-item"><div><b>${esc(t)}</b>${n ? ` <span class="small muted">· ${esc(n)}</span>` : ''}</div><span class="pg">${p}</span><div class="formula ar">${esc(f)}</div></div>`).join('')}</section>
+    <section class="panel" style="margin-top:16px"><h2 class="st">تعليمات الكتاب لتطبيقات الذكاء <span class="pg">ص204</span></h2><ol class="small" style="padding-inline-start:20px;line-height:2;margin:0">
+      <li>ربط المتغيرات بربحية السهم واكتشاف نمط الارتباط بينهم</li><li>تتبع نمط تحرك المتغيرات الثلاث خلال الفترة الماضية، والتعرف على أسبابها ومداها الأقصى، ثم تطبيقه على السنوات القادمة</li><li>تطبيق نمط تحرك المتغيرات على الربحية لتخرج الربحية القصوى المستمرة المتوقعة للسهم</li><li>تطبيق معادلة التقييم لتخرج القيمة العادلة</li></ol>
+      <p class="small muted">ولتفادي أسباب عدم الدقة التي ذكرها الكتاب (عدم التزام الذكاء بخطوات المعادلة، واختلاف فهمه للأرقام)، يطلب التطبيق من النماذج البيانات الخام فقط، ثم يحسب القيمة العادلة بنفسه بالمعادلة المنقحة.</p></section>`;
+  }
+};
+
+/* ========= AI providers — direct calls with the user's own keys ========= */
+const PROV = {
+  claude: { name: 'Claude', by: 'Anthropic', models: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5', 'claude-fable-5-1'], keyUrl: 'https://console.anthropic.com/settings/keys' },
+  openai: { name: 'ChatGPT', by: 'OpenAI', models: ['gpt-5.5', 'gpt-6-astra', 'gpt-5'], keyUrl: 'https://platform.openai.com/api-keys' },
+  gemini: { name: 'Gemini', by: 'Google', models: ['gemini-3.8-pro', 'gemini-3.8-flash', 'gemini-2.5-pro'], keyUrl: 'https://aistudio.google.com/apikey' }
+};
+const RUN = {}; // live state per provider: {status, t0}
+
+const METHOD_TEXT = `منهج كتاب «تجربة تسوق في متاجر الأسهم» (نايف علي رباح المزيني):
+المعادلة المنقحة — معادلة القيمة العادلة السردية (ص68)، الخطوات بالترتيب:
+1- تعرف على منتجات الشركة. 2- تعرف على حجم السوق لكل منتج. 3- تعرف على الحصة السوقية للشركة لكل منتج. 4- تعرف على هامش ربح الشركة.
+5- اجمع الحصص السوقية للشركة (Σ حجم السوق × الحصة). 6- طبق عليه هامش الربح. 7- أضف عليه عوائد استثمارات الشركة. 8- اقسم الناتج على عدد الأسهم.
+9- اضرب الناتج في 15. 10- النتيجة هي القيمة العادلة للسهم. 11- اعتمد على البيانات المتوقعة من تقارير أو أنماط نمو للنتائج السابقة.
+تعليمات الكتاب لتطبيقات الذكاء (ص204): أولاً ربط المتغيرات الثلاث (حجم السوق، الحصة السوقية، هامش الربح) بربحية السهم واكتشاف نمط الارتباط بينها. ثانياً تتبع نمط تحرك المتغيرات الثلاث خلال الفترة الماضية والتعرف على أسبابها ومداها الأقصى، ثم تطبيقه على السنوات القادمة. ثالثاً تطبيق نمط تحرك المتغيرات على الربحية لتخرج الربحية القصوى المستمرة المتوقعة للسهم. رابعاً تطبيق معادلة التقييم.
+تعريفات: حجم السوق = مجموع مبالغ حصص العملاء ذوي الرغبة والقدرة المالية بعد خصم التكاليف الأكثر أهمية (مدفوعة أو محتمل دفعها). الحصة السوقية = إيرادات الشركة من المنتج ÷ حجم السوق × 100. هامش الربح = النسبة بين المصروفات التشغيلية واللازمة والإيرادات التشغيلية للمنتج، ويضاف عليه من المصروفات الإدارية بمقدار نسبة المنتج في الإيرادات. متوسط النمو = متوسط ((سنة − السابقة) ÷ السابقة × 100) ويطبق على آخر سنة محققة. الإيرادات الأخرى (بيع أصول ونحوها) لا تدخل في الربحية بل في السيولة. الإيرادات التشغيلية غير المتكررة تضاف لرأس المال لا للربحية.
+تصنيف الشركات: تحول كلي (القيمة الدفترية أقل من الاسمية)، تحول جزئي (صافي الدخل − الإيرادات الأخرى سالب لآخر سنة، أو انكماش تشغيلي لأربعة أرباع)، نمو (حقوق المساهمين والمبيعات في ازدياد مستمر أو زيادات متكررة لرأس المال)، نضج وعوائد (ثبات نسبي وتوزيعات مستمرة)، دورية (تقلب الأرباح). النشاط: دفاعية، دورية، واعدة، كمالية.`;
+
+const SCHEMA = `{
+  "company": {"name": "", "symbol": "", "sector": "", "activity_type": "دفاعية|دورية|واعدة|كمالية", "founded_year": 0, "current_price": 0, "shares_outstanding": 0, "paid_capital": 0, "nominal_value": 10, "sharia_compliant": null},
+  "valuation_year": 0,
+  "products": [{"name": "", "market_size": 0, "market_size_growth_pct": 0, "market_share_pct": 0, "share_growth_pct": 0, "margin_pct": 0, "basis": "مصدر الأرقام وطريقة تقديرها باختصار"}],
+  "company_margin_pct": 0,
+  "investment_returns": 0,
+  "history": {"years": [], "revenue": [], "net_income": [], "other_income": [], "equity": [], "dps": []},
+  "last_year": {"net_income": 0, "other_income": 0, "equity": 0, "total_assets": 0, "liabilities": 0},
+  "quarters_operating": {"net_income": [], "other_income": []},
+  "capital_increases_count": 0,
+  "dividend_peers": [{"name": "", "avg_price_200d": 0, "eps": 0}],
+  "model_fair_value": 0,
+  "classification": "",
+  "summary": "فقرة عربية موجزة عن نتيجة التحليل وأسبابه",
+  "risks": [""],
+  "assumptions": [""],
+  "sources": [{"title": "", "url": ""}],
+  "confidence_pct": 0
+}`;
+
+function sysFull(year) {
+  return `أنت محلل أسهم محترف في السوق المالية السعودية (تداول)، تطبق المنهج التالي حرفياً دون تجاوز أي خطوة.
+${METHOD_TEXT}
+
+قواعد العمل:
+- ابحث في الويب عن أحدث الأرقام: القوائم المالية والإعلانات في موقع تداول السعودية، أرقام، تقارير مجلس الإدارة، نشرات الإصدار، تقارير البيوت المالية، الهيئة العامة للإحصاء، والوزارة المسؤولة عن القطاع.
+- قسّم إيرادات الشركة إلى مصادر الدخل الأكثر مساهمة (القطاعات التشغيلية المفصح عنها). لكل مصدر: حجم السوق الفعلي بالريال للنطاق الذي تخدمه الشركة، وحصة الشركة منه، وهامشه.
+- إن لم تجد حجم السوق منشوراً فقدّره من مجموع إيرادات الشركات العاملة في المنتج ونسبة كل منها، واذكر ذلك في basis.
+- اجعل القيم للسنة المتوقعة ${year}: طبق متوسط نمو السنوات المحققة، أو توقعات بيوت الخبرة، والأفضل المتوسط بينهما.
+- تحقق داخلياً أن (Σ حجم السوق × الحصة) يقارب إيرادات الشركة المتوقعة، وأن (الإيرادات × الهامش) يقارب صافي الربح التشغيلي المتوقع.
+- investment_returns: العوائد الاستثمارية المستمرة فقط (حصص الشركات الزميلة، توزيعات الاستثمارات، عوائد الصكوك والودائع)، دون الإيرادات الأخرى غير المتكررة.
+- dividend_peers: من 3 إلى 5 شركات سعودية ذات توزيعات ثابتة مستمرة، بمتوسط سعر 200 يوم وربحية السهم = (صافي الدخل − الإيرادات الأخرى) ÷ عدد الأسهم.
+- المبالغ كلها بالريال السعودي أرقاماً كاملة (4000000000 وليس "4 مليار")، والنسب أرقاماً من 0 إلى 100. المصفوفات من الأقدم إلى الأحدث.
+- لا تخترع أرقاماً. إن لم تتوفر قيمة ضع null واذكر ذلك في assumptions.
+- model_fair_value: نتيجة تطبيقك للمعادلة المنقحة (للمقارنة فقط؛ التطبيق يعيد الحساب بنفسه).
+- أعد كائن JSON صالحاً فقط، بلا أي نص قبله أو بعده، وبلا علامات تنسيق.`;
+}
+function userFull(target, year, notes) {
+  return `الشركة المطلوب تقييمها: ${target}\nسنة التقييم المتوقعة: ${year}\n${notes ? 'ملاحظات المستخدم: ' + notes + '\n' : ''}أعد JSON بهذا المخطط تماماً:\n${SCHEMA}`;
+}
+function sysAsk() {
+  return `أنت محلل أسهم سعودي محترف تلتزم بالمنهج التالي في كل إجابة:\n${METHOD_TEXT}\nأجب بالعربية الفصحى الواضحة وباختصار منظم. استند إلى أحدث البيانات عبر البحث متى احتجت، واذكر الأرقام بمصادرها. إذا كان السؤال عن قرار شراء أو بيع فاعرض المعطيات وفق قواعد الكتاب ودع القرار للمستخدم.`;
+}
+function companySnapshot(c) {
+  const R = revised(c), cl = classify(c), M = mother(c, R.eps);
+  return JSON.stringify({ name: c.name, symbol: c.symbol, sector: c.sector, price: c.price, shares: c.shares, valuation_years_ahead: R.n, products: R.rows.map(r => ({ name: r.p.name, market_size: r.ms, share_pct: r.sh, margin_pct: r.mg, revenue: r.rev, profit: r.prof })), investment_returns: R.inv, net_profit: R.net, eps: R.eps, fair_value_revised: R.fv, mother_fair_value: M.fv, avg_peer_pe: M.A, classification: cl.info && cl.info.t, activity: c.activity }, null, 1);
+}
+
+/* keys copied from web pages often carry spaces, line breaks or invisible RTL marks — strip them */
+const cleanKey = k => String(k || '').replace(/[^\x21-\x7E]/g, '');
+const key = p => cleanKey(SET.keys[p]);
+const PNAME = { claude: 'Anthropic', openai: 'OpenAI', gemini: 'Google Gemini' };
+class ApiErr extends Error { constructor(p, status, raw) { super(explainErr(p, status, raw)); this.p = p; this.status = status; this.raw = raw; } }
+function explainErr(p, status, raw) {
+  const r = String(raw || ''); const L = r.toLowerCase(); let why;
+  if (status === 0) why = 'تعذر الوصول إلى الخادم. غالباً الملف مفتوح داخل نافذة معاينة (مثل معاينة تطبيق Claude) تمنع الاتصال الخارجي، أو هناك حجب في الشبكة. احفظ الملف على جهازك وافتحه بالنقر المزدوج في Chrome أو Edge.';
+  else if (status === 401 || /invalid.*(api|x-api)?.?key|api key not valid|incorrect api key|authentication/i.test(r)) why = 'المفتاح غير صحيح. انسخه من جديد كاملاً من لوحة ' + PNAME[p] + ' والصقه دون مسافات.';
+  else if (/credit balance|insufficient_quota|billing|exceeded your current quota|quota/i.test(r)) why = 'لا يوجد رصيد API في حسابك لدى ' + PNAME[p] + '. اشتراك التطبيق الشهري لا يشمل رصيد API؛ أضف رصيداً من صفحة الفوترة في لوحة المطورين.';
+  else if (status === 404 || /model.*(not found|does not exist|not supported|is not available)|unknown model|no such model/i.test(r)) why = 'اسم النموذج غير متاح لحسابك. اضغط «جلب النماذج المتاحة» واختر من القائمة.';
+  else if (status === 403 || /permission|not allowed|location is not supported|region/i.test(r)) why = 'المفتاح لا يملك صلاحية لهذا الطلب (قد تكون الخدمة أو أداة البحث غير مفعلة لحسابك أو منطقتك).';
+  else if (status === 429) why = 'تجاوزت حد الطلبات أو الرصيد. انتظر قليلاً أو راجع حدود حسابك.';
+  else if (status >= 500) why = 'خادم ' + PNAME[p] + ' مشغول أو متعطل مؤقتاً. أعد المحاولة بعد قليل.';
+  else why = 'رفض الخادم الطلب.';
+  return why + (r ? ' — رسالة الخادم: ' + r.slice(0, 300) : '') + (status ? ` (HTTP ${status})` : '');
+}
+async function req(p, url, opt) {
+  let r, j;
+  try { r = await fetch(url, opt); } catch (e) { throw new ApiErr(p, 0, e.message); }
+  const t = await r.text(); try { j = JSON.parse(t); } catch (e) { j = { _raw: t }; }
+  if (!r.ok) { const m = (j.error && (j.error.message || j.error.type || JSON.stringify(j.error))) || j._raw || ''; throw new ApiErr(p, r.status, m); }
+  return j;
+}
+const isToolErr = e => e instanceof ApiErr && e.status === 400 && /tool|web_search|google_search|search/i.test(e.raw || '');
+const CL_H = () => ({ 'content-type': 'application/json', 'x-api-key': key('claude'), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' });
+async function callClaude(sys, user, search) {
+  if (!key('claude')) throw new Error('لا يوجد مفتاح Anthropic. أضفه من صفحة المفاتيح والنماذج.');
+  const run = async useSearch => {
+    const messages = [{ role: 'user', content: user }]; let text = '', sources = [];
+    for (let turn = 0; turn < 5; turn++) {
+      const body = { model: SET.models.claude.trim(), max_tokens: 12000, system: sys, messages };
+      if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 10 }];
+      const j = await req('claude', 'https://api.anthropic.com/v1/messages', { method: 'POST', headers: CL_H(), body: JSON.stringify(body) });
+      (j.content || []).forEach(b => {
+        if (b.type === 'text') { text += b.text; (b.citations || []).forEach(ci => ci.url && sources.push({ title: ci.title || ci.url, url: ci.url })); }
+        if (b.type === 'web_search_tool_result' && Array.isArray(b.content)) b.content.forEach(x => x.url && sources.push({ title: x.title || x.url, url: x.url }));
+      });
+      if (j.stop_reason === 'pause_turn') { messages.push({ role: 'assistant', content: j.content }); text = ''; continue; }
+      break;
+    }
+    return { text, sources, noSearch: !useSearch && search };
+  };
+  try { return await run(search); } catch (e) { if (search && isToolErr(e)) return run(false); throw e; }
+}
+async function callOpenAI(sys, user, search) {
+  if (!key('openai')) throw new Error('لا يوجد مفتاح OpenAI. أضفه من صفحة المفاتيح والنماذج.');
+  const send = tool => { const body = { model: SET.models.openai.trim(), instructions: sys, input: user }; if (tool) body.tools = [{ type: tool }];
+    return req('openai', 'https://api.openai.com/v1/responses', { method: 'POST', headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + key('openai') }, body: JSON.stringify(body) }); };
+  let j, noSearch = false;
+  try { j = await send(search ? 'web_search' : null); }
+  catch (e) { if (!(search && isToolErr(e))) throw e; try { j = await send('web_search_preview'); } catch (e2) { if (!isToolErr(e2)) throw e2; j = await send(null); noSearch = true; } }
+  let text = j.output_text || ''; const sources = [];
+  (j.output || []).filter(x => x.type === 'message').forEach(m => (m.content || []).forEach(ct => {
+    if (ct.type === 'output_text') { if (!j.output_text) text += ct.text; (ct.annotations || []).forEach(a => a.url && sources.push({ title: a.title || a.url, url: a.url })); }
+  }));
+  return { text, sources, noSearch };
+}
+async function callGemini(sys, user, search) {
+  if (!key('gemini')) throw new Error('لا يوجد مفتاح Gemini. أضفه من صفحة المفاتيح والنماذج.');
+  const model = SET.models.gemini.trim().replace(/^models\//, '');
+  const send = useSearch => { const body = { systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { temperature: 0.2 } };
+    if (useSearch) body.tools = [{ google_search: {} }];
+    return req('gemini', `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key('gemini'))}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); };
+  let j, noSearch = false;
+  try { j = await send(search); } catch (e) { if (!(search && isToolErr(e))) throw e; j = await send(false); noSearch = true; }
+  const cand = (j.candidates || [])[0] || {};
+  if (!cand.content && (cand.finishReason || (j.promptFeedback || {}).blockReason)) throw new Error('أوقف Gemini الرد: ' + (cand.finishReason || j.promptFeedback.blockReason));
+  const text = ((cand.content && cand.content.parts) || []).map(p => p.text || '').join('');
+  const sources = (((cand.groundingMetadata || {}).groundingChunks) || []).map(g => g.web).filter(Boolean).map(w => ({ title: w.title || w.uri, url: w.uri }));
+  return { text, sources, noSearch };
+}
+/* list the models this key can actually use */
+async function listModels(p) {
+  if (p === 'claude') { const j = await req(p, 'https://api.anthropic.com/v1/models?limit=100', { headers: CL_H() }); return (j.data || []).map(m => m.id); }
+  if (p === 'openai') { const j = await req(p, 'https://api.openai.com/v1/models', { headers: { authorization: 'Bearer ' + key('openai') } }); return (j.data || []).map(m => m.id).filter(id => /^(gpt|o\d|chatgpt)/i.test(id) && !/audio|realtime|tts|transcribe|image|embedding|search-preview|instruct/i.test(id)).sort().reverse(); }
+  const j = await req(p, 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + encodeURIComponent(key('gemini')), {});
+  return (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, '')).filter(id => /gemini/i.test(id) && !/embedding|image|tts|audio|live/i.test(id));
+}
+const PREF = { claude: [/opus-5-5/, /sonnet-5-5/, /opus/, /sonnet/], openai: [/^gpt-5\.5$/, /^gpt-6/, /^gpt-5(\.\d)?$/, /^gpt-5/, /^gpt-4\.1$/, /^gpt-4o$/], gemini: [/pro$/, /pro/, /flash$/, /flash/] };
+function bestModel(p, ids) { for (const rx of PREF[p]) { const f = ids.filter(id => rx.test(id)).sort().reverse()[0]; if (f) return f; } return ids[0]; }
+const CALL = { claude: callClaude, openai: callOpenAI, gemini: callGemini };
+
+function extractJSON(t) {
+  if (!t) throw new Error('رد فارغ من النموذج');
+  let s = t.replace(/```json|```/gi, '');
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a < 0 || b < a) throw new Error('لم يُعِد النموذج JSON');
+  s = s.slice(a, b + 1);
+  try { return JSON.parse(s); } catch (e) { return JSON.parse(s.replace(/,\s*([}\]])/g, '$1').replace(/[“”]/g, '"')); }
+}
+const J = v => (v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) ? '' : String(v);
+const Jl = a => Array.isArray(a) ? a.filter(x => x !== null && x !== undefined).join(', ') : '';
+function applyData(c, d) {
+  const co = d.company || {};
+  if (co.name) c.name = co.name; if (co.symbol) c.symbol = String(co.symbol); if (co.sector) c.sector = co.sector;
+  if (['دفاعية', 'دورية', 'واعدة', 'كمالية'].includes(co.activity_type)) c.activity = co.activity_type;
+  c.founded = J(co.founded_year) || c.founded; c.price = J(co.current_price) || c.price; c.shares = J(co.shares_outstanding) || c.shares;
+  c.capital = J(co.paid_capital) || c.capital; c.nominal = J(co.nominal_value) || c.nominal || '10';
+  if (co.sharia_compliant === true) c.sharia = 'ok'; else if (co.sharia_compliant === false) c.sharia = 'fail';
+  if (Array.isArray(d.products) && d.products.length) c.products = d.products.map(p => newProduct({ name: p.name || '', ms: J(p.market_size), gms: J(p.market_size_growth_pct), share: J(p.market_share_pct), gsh: J(p.share_growth_pct), margin: J(p.margin_pct), gmg: '' }));
+  c.margin = J(d.company_margin_pct) || c.margin; c.invest = J(d.investment_returns); c.projYears = '0';
+  const h = d.history || {}; c.hist = { years: Jl(h.years), revenue: Jl(h.revenue), netIncome: Jl(h.net_income), otherIncome: Jl(h.other_income), equity: Jl(h.equity), dps: Jl(h.dps) };
+  const ly = d.last_year || {}; c.netIncome = J(ly.net_income); c.otherIncome = J(ly.other_income); c.equity = J(ly.equity); c.totalAssets = J(ly.total_assets); c.liabilities = J(ly.liabilities);
+  const q = d.quarters_operating || {}; c.q = { net: Jl(q.net_income), other: Jl(q.other_income) };
+  c.capIncreases = J(d.capital_increases_count);
+  if (Array.isArray(d.dividend_peers) && d.dividend_peers.length) c.peers = d.dividend_peers.map(p => ({ id: uid(), name: p.name || '', price: J(p.avg_price_200d), eps: J(p.eps) }));
+  c.example = false;
+  return c;
+}
+function evalData(d) { const t = applyData(newCompany(''), d); const R = revised(t, 0); return { fv: R.fv, eps: R.eps, net: R.net, rev: R.totalRev, t }; }
+function mdLite(s) {
+  const lines = esc(s || '').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').split(/\n/);
+  let html = '', inList = false;
+  lines.forEach(l => { const m = l.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)/); const h = l.match(/^\s*#{1,6}\s*(.*)/);
+    if (m) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${m[1]}</li>`; return; }
+    if (inList) { html += '</ul>'; inList = false; }
+    if (h) html += `<p><b>${h[1]}</b></p>`; else if (l.trim()) html += `<p>${l}</p>`; });
+  return html + (inList ? '</ul>' : '');
+}
+const uniqSrc = a => { const seen = new Set(); return (a || []).filter(x => x && x.url && !seen.has(x.url) && seen.add(x.url)); };
+
+async function runAI(mode) {
+  const c = cur(); const year = $('#aiYear') ? $('#aiYear').value : String(new Date().getFullYear() + 1);
+  const target = ($('#aiTarget') && $('#aiTarget').value.trim()) || `${c.name} ${c.symbol}`;
+  const q = $('#aiQ') ? $('#aiQ').value.trim() : '';
+  if (mode === 'ask' && !q) { toast('اكتب سؤالك أولاً'); return; }
+  await analyze(c, mode, { target, year, q, notes: $('#aiNotes') ? $('#aiNotes').value : '' });
+  if (mode === 'full' && SET.autoAdopt !== 'off') autoAdopt(c);
+  toast('اكتمل التحليل');
+}
+function refreshViews() { const v = VIEWS[UI.view]; if (v && v.update && (UI.view === 'ai' || UI.view === 'market')) v.update(); }
+async function analyze(c, mode, { target, year, q, notes }) {
+  const provs = Object.keys(PROV).filter(p => SET.enabled[p] && SET.keys[p]);
+  if (!provs.length) { toast('أضف مفتاح نموذج واحد على الأقل وفعّله'); go('settings'); throw new Error('no-keys'); }
+  c.aiTarget = target; c.aiYear = year; save();
+  const store_ = mode === 'full' ? (c.ai = c.ai || {}) : (c.aiQ = c.aiQ || {});
+  await Promise.all(provs.map(async p => {
+    const rk = c.id + p;
+    RUN[rk] = { status: 'run', t0: Date.now(), mode }; refreshViews();
+    try {
+      const res = mode === 'full' ? await CALL[p](sysFull(year), userFull(target, year, notes), SET.search)
+        : await CALL[p](sysAsk(), `السؤال: ${q}\n\nبيانات الشركة الحالية في التطبيق (للسياق):\n${companySnapshot(c)}`, SET.search);
+      const entry = { at: Date.now(), model: SET.models[p], ms: Date.now() - RUN[rk].t0, text: res.text, sources: uniqSrc(res.sources), q: mode === 'ask' ? q : undefined, noSearch: res.noSearch };
+      if (mode === 'full') { entry.data = extractJSON(res.text); const ev = evalData(entry.data); entry.fv = ev.fv; entry.eps = ev.eps; entry.net = ev.net; entry.sources = uniqSrc([...(entry.data.sources || []), ...entry.sources]); delete entry.text; }
+      store_[p] = entry; RUN[rk] = { status: 'ok' };
+    } catch (e) {
+      const msg = /Failed to fetch|NetworkError|Load failed/i.test(e.message) ? 'تعذر الاتصال بالخادم. تحقق من الإنترنت ومن صحة المفتاح، وافتح الملف من جهازك مباشرة في المتصفح.' : e.message;
+      store_[p] = { at: Date.now(), model: SET.models[p], error: msg, q: mode === 'ask' ? q : undefined }; RUN[rk] = { status: 'err' };
+    }
+    save(); refreshViews();
+  }));
+}
+/* adopt the data of the model whose fair value sits at the median of all models */
+function autoAdopt(c) {
+  const ok = Object.entries(c.ai || {}).filter(([, e]) => e && e.data && isFinite(e.fv));
+  if (!ok.length) return null;
+  let pick;
+  if (SET.autoAdopt && SET.autoAdopt !== 'median' && ok.find(([p]) => p === SET.autoAdopt)) pick = ok.find(([p]) => p === SET.autoAdopt);
+  else { const md = median(ok.map(([, e]) => e.fv)); pick = ok.slice().sort((x, y) => Math.abs(x[1].fv - md) - Math.abs(y[1].fv - md))[0]; }
+  const keep = { name: c.name, symbol: c.symbol, sector: c.sector, market: c.market };
+  applyData(c, pick[1].data);
+  if (keep.symbol) Object.assign(c, keep);
+  c.adoptedFrom = pick[0]; c.adoptedAt = Date.now(); save(); renderCoSelect();
+  return pick[0];
+}
+
+VIEWS.ai = {
+  render() {
+    const c = cur(); const y = new Date().getFullYear(); const noKeys = !Object.values(SET.keys).some(Boolean);
+    return `${head('مختبر الذكاء الاصطناعي', 'يبحث Claude وChatGPT وGemini في الويب عن بيانات الشركة وفق تعليمات الكتاب (ص204)، ويعيد كل نموذج الأرقام الخام: المنتجات وحجم السوق والحصة والهامش وعوائد الاستثمار. ثم يحسب التطبيق القيمة العادلة بنفسه بالمعادلة المنقحة، فلا تتأثر النتيجة باختلاف النماذج في الحساب.')}
+    <div class="stack">${noKeys ? `<div class="banner warn">لم تُضف أي مفاتيح بعد. <button class="btn sm" data-nav="settings">إضافة المفاتيح</button></div>` : ''}
+      <section class="panel"><div class="fields" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+        <div class="f"><label for="aiTarget">الشركة (الاسم أو الرمز)</label><input id="aiTarget" type="text" value="${esc(c.aiTarget || (c.example ? '' : `${c.name} ${c.symbol}`.trim()))}" placeholder="مثال: سابك 2010 أو المراعي 2280"></div>
+        <div class="f"><label for="aiYear">سنة التقييم المتوقعة (الخطوة 11)</label><select id="aiYear">${[y, y + 1, y + 2, y + 3].map(v => `<option${String(c.aiYear || y + 1) === String(v) ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div class="f" style="grid-column:1/-1"><label for="aiNotes">ملاحظات إضافية للنماذج (اختياري)</label><input id="aiNotes" type="text" placeholder="مثال: ركّز على مشروع التوسعة الجديد وأثره على الطاقة الإنتاجية"></div></div>
+        <div class="row gap2" style="margin-top:12px">${Object.entries(PROV).map(([k, p]) => `<label class="row gap"><input type="checkbox" data-act="aiEnable" data-p="${k}"${SET.enabled[k] ? ' checked' : ''} style="accent-color:var(--gold)"> ${p.name} <span class="faint small mono">${esc(SET.models[k])}</span>${SET.keys[k] ? '' : chip('بلا مفتاح', 'warn')}</label>`).join('')}
+          <label class="row gap"><input type="checkbox" data-act="aiSearch"${SET.search ? ' checked' : ''} style="accent-color:var(--gold)"> البحث في الويب</label></div>
+        <div class="row gap" style="margin-top:14px"><button class="btn" data-act="aiRun">تقييم كامل بالنماذج المفعّلة</button><span class="small muted">قد يستغرق دقيقة إلى ثلاث دقائق مع البحث.</span></div></section>
+      <div id="o-ai" class="stack"></div>
+      <section class="panel"><h2 class="st">سؤال للنماذج عن الشركة الحالية</h2><div class="f"><label for="aiQ">سؤالك</label><textarea id="aiQ" placeholder="مثال: ما أثر انخفاض أسعار المواد الخام على هامش الربح المتوقع؟ وهل الشركة دورية أم دفاعية؟"></textarea></div>
+        <div class="row gap" style="margin-top:10px"><button class="btn ghost" data-act="aiAsk">إرسال السؤال</button><span class="small muted">يُرسل مع السؤال ملخص بيانات الشركة وقيمتها المحسوبة.</span></div><div id="o-ask" class="grid g3" style="margin-top:14px"></div></section>
+    </div>`;
+  },
+  update() {
+    const c = cur(); const A = c.ai || {}; const Q = c.aiQ || {};
+    const st = p => RUN[c.id + p] && RUN[c.id + p].status === 'run' ? 'run' : null;
+    const card = (p, e, kind) => {
+      const P = PROV[p]; const running = st(p) && RUN[c.id + p].mode === kind;
+      const dot = running ? 'run' : e ? (e.error ? 'err' : 'ok') : '';
+      let body;
+      if (running) body = `<div class="muted small">يعمل الآن… ${SET.search ? 'يبحث في الويب ويجمع الأرقام' : ''}</div>`;
+      else if (!e) body = `<div class="muted small">لم يُشغّل بعد.</div>`;
+      else if (e.error) body = `<div class="banner warn small">${esc(e.error)}</div>`;
+      else if (kind === 'full') { const d = e.data || {}; const price = num(c.price);
+        body = `<div class="row spread"><div><div class="muted small">القيمة العادلة (محسوبة بالتطبيق)</div><div class="big" style="font-size:34px">${fmt(e.fv)}<small>﷼</small></div></div><div class="kv"><div class="k">تقدير النموذج</div><div class="v">${fmt(num(d.model_fair_value))}</div></div></div>
+          <div class="outs">${[o('ربحية السهم', e.eps, 'sar'), o('صافي الربح المتوقع', e.net, 'money'), o('السعر الحالي حسب النموذج', num((d.company || {}).current_price), 'sar'), o('التصنيف', d.classification || '—', 'text'), o('ثقة النموذج', num(d.confidence_pct), 'pct')].map(outRow).join('')}</div>
+          ${d.summary ? `<div class="md">${mdLite(d.summary)}</div>` : ''}
+          ${Array.isArray(d.products) ? `<div class="tw"><table><thead><tr><th>المنتج</th><th class="n">السوق</th><th class="n">الحصة</th><th class="n">الهامش</th></tr></thead><tbody>${d.products.map(x => `<tr><td title="${esc(x.basis || '')}">${esc(x.name)}</td><td class="n">${money(num(x.market_size))}</td><td class="n">${pct(num(x.market_share_pct))}</td><td class="n">${pct(num(x.margin_pct))}</td></tr>`).join('')}</tbody></table></div>` : ''}
+          ${(d.assumptions || []).length ? `<details><summary class="small">الافتراضات (${d.assumptions.length})</summary><ul class="small">${d.assumptions.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}
+          ${(d.risks || []).length ? `<details><summary class="small">المخاطر (${d.risks.length})</summary><ul class="small">${d.risks.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}
+          ${e.sources && e.sources.length ? `<details><summary class="small">المصادر (${e.sources.length})</summary><div class="src">${e.sources.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join('')}</div></details>` : ''}
+          <div class="row gap"><button class="btn sm" data-act="aiAdopt" data-p="${p}">اعتماد البيانات في الشركة</button><button class="btn ghost sm" data-act="aiAdoptNew" data-p="${p}">في شركة جديدة</button><button class="btn ghost sm" data-act="aiRaw" data-p="${p}">JSON</button></div>
+          <pre class="raw" id="raw-${p}" hidden>${esc(JSON.stringify(d, null, 2))}</pre>`; }
+      else body = `${e.q ? `<div class="small muted">س: ${esc(e.q)}</div>` : ''}<div class="md">${mdLite(e.text)}</div>${e.sources && e.sources.length ? `<details><summary class="small">المصادر (${e.sources.length})</summary><div class="src">${e.sources.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join('')}</div></details>` : ''}`;
+      return `<article class="ai-card"><div class="hd"><div class="row gap"><span class="dot ${dot}"></span><span class="nm">${P.name}</span><span class="faint small">${P.by}</span>${e && e.noSearch ? chip('بدون بحث ويب', 'warn') : ''}</div><span class="faint small mono">${e && e.model ? esc(e.model) : esc(SET.models[p])}${e && e.ms ? ' · ' + fmt(e.ms / 1000, 0) + 'ث' : ''}</span></div><div class="bd">${body}</div></article>`;
+    };
+    const fvs = Object.keys(PROV).map(p => A[p] && isFinite(A[p].fv) ? { p, fv: A[p].fv } : null).filter(Boolean);
+    const md = median(fvs.map(x => x.fv)); const R = revised(c); const price = num(c.price);
+    const cons = fvs.length ? `<section class="panel"><h2 class="st">إجماع النماذج</h2><div class="grid g4">
+      <div class="kv"><div class="k">الوسيط</div><div class="v" style="color:var(--gold2);font-size:26px">${sar(md)}</div></div>
+      <div class="kv"><div class="k">أدنى – أعلى</div><div class="v">${rng(Math.min(...fvs.map(x => x.fv)), Math.max(...fvs.map(x => x.fv)))}</div></div>
+      <div class="kv"><div class="k">تشتت النماذج</div><div class="v">${pct((Math.max(...fvs.map(x => x.fv)) - Math.min(...fvs.map(x => x.fv))) / md * 100)}</div></div>
+      <div class="kv"><div class="k">قيمة الشركة الحالية في التطبيق</div><div class="v">${sar(R.fv)}</div></div></div>
+      ${fvs.length > 1 && (Math.max(...fvs.map(x => x.fv)) - Math.min(...fvs.map(x => x.fv))) / md > 0.3 ? '<p class="small" style="color:var(--warn);margin:10px 0 0">التشتت أعلى من 30%: راجع افتراضات حجم السوق والحصة في كل نموذج قبل الاعتماد (ص204: اختلاف التطبيقات في قراءة الأرقام).</p>' : ''}
+      <div class="chart-box sm" style="margin-top:12px"><canvas id="chAi"></canvas></div></section>` : '';
+    $('#o-ai').innerHTML = cons + `<div class="grid g3">${Object.keys(PROV).map(p => card(p, A[p], 'full')).join('')}</div>`;
+    const oa = $('#o-ask'); if (oa) oa.innerHTML = Object.keys(PROV).map(p => card(p, Q[p], 'ask')).join('');
+    if (fvs.length) chart('chAi', { type: 'bar', data: { labels: fvs.map(x => PROV[x.p].name), datasets: [{ label: 'القيمة العادلة', data: fvs.map(x => x.fv), backgroundColor: css('--gold') }, { type: 'line', label: 'السعر', data: fvs.map(() => price), borderColor: css('--info'), borderDash: [5, 4], pointRadius: 0 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } });
+  }
+};
+
+VIEWS.settings = {
+  render() {
+    const framed = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+    const envBad = framed || !/^(file|https?):$/.test(location.protocol);
+    return `${envBad ? `<div class="banner warn" style="margin-bottom:16px"><b>الملف مفتوح داخل نافذة معاينة.</b> نوافذ المعاينة (مثل معاينة الملفات في تطبيق Claude) تمنع الاتصال بخوادم الذكاء الاصطناعي. نزّل الملف إلى جهازك ثم افتحه بالنقر المزدوج ليعمل في Chrome أو Edge.</div>` : ''}${head('المفاتيح والنماذج', 'يتصل التطبيق مباشرة من متصفحك بخوادم Anthropic وOpenAI وGoogle بمفاتيحك الخاصة. تُحفظ المفاتيح في هذا المتصفح فقط، ولا تُرسل إلى أي جهة أخرى، ولا تُضمَّن في ملف التصدير.')}
+    <div class="grid g3">${Object.entries(PROV).map(([k, p]) => `<section class="panel"><h2 class="st">${p.name} <span class="pg">${p.by}</span></h2><div class="stack" style="gap:12px">
+      <div class="f"><label for="key-${k}">مفتاح API</label><div class="row gap" style="flex-wrap:nowrap"><input id="key-${k}" type="password" data-s="keys.${k}" value="${esc(SET.keys[k])}" autocomplete="off" class="n"><button class="btn ghost sm" data-act="toggleKey" data-p="${k}" aria-label="إظهار المفتاح">👁</button></div><span class="hint"><a href="${p.keyUrl}" target="_blank" rel="noopener">الحصول على مفتاح</a> · الاشتراك الشهري في التطبيق لا يشمل رصيد API</span></div>
+      <div class="f"><label for="model-${k}">النموذج</label><input id="model-${k}" type="text" data-s="models.${k}" value="${esc(SET.models[k])}" list="ml-${k}" class="n"><datalist id="ml-${k}">${((SET.modelList || {})[k] || p.models).map(m => `<option value="${esc(m)}">`).join('')}</datalist><span class="hint">يُضبط تلقائياً عند «اختبار الاتصال» من النماذج المتاحة لمفتاحك</span></div>
+      <div class="row gap"><button class="btn ghost sm" data-act="testKey" data-p="${k}">اختبار الاتصال وجلب النماذج</button><span id="test-${k}" class="small"></span></div></div></section>`).join('')}</div>
+    <section class="panel" style="margin-top:16px"><h2 class="st">التحليل التلقائي للأسهم</h2><div class="fields">
+      ${fld('autoAdopt', 'البيانات المعتمدة بعد التحليل', { scope: 's', sel: [['median', 'النموذج الأقرب لوسيط النماذج (موصى به)'], ['claude', 'Claude دائماً'], ['openai', 'ChatGPT دائماً'], ['gemini', 'Gemini دائماً'], ['off', 'لا تعتمد تلقائياً']] })}
+      ${fld('valYear', 'سنة التقييم المتوقعة', { scope: 's', ph: String(new Date().getFullYear() + 1), hint: 'الخطوة 11: البيانات المتوقعة' })}</div></section>
+    <section class="panel" style="margin-top:16px"><h2 class="st">ملاحظات</h2><ul class="small" style="margin:0;padding-inline-start:20px;line-height:2">
+      <li>البحث في الويب: Claude يستخدم أداة web_search، وChatGPT أداة web_search في Responses API، وGemini أداة Google Search.</li>
+      <li>إذا ظهر خطأ اتصال، افتح الملف مباشرة من جهازك في Chrome أو Edge (وليس من معاينة داخل تطبيق آخر).</li>
+      <li>التكلفة تُخصم من رصيد API لكل مزود حسب استهلاك كل تحليل.</li></ul></section>`;
+  }
+};
+
+/* ========= boot & events ========= */
+let upT;
+function onBind(el) {
+  const sc = el.dataset.b !== undefined ? 'b' : el.dataset.s !== undefined ? 's' : el.dataset.g !== undefined ? 'g' : null; if (!sc) return false;
+  const path = el.dataset[sc]; const src = sc === 'b' ? cur() : sc === 's' ? SET : DB;
+  setPath(src, path, el.value);
+  if (sc === 's') saveSet(); else save();
+  if (sc === 'b' && (path === 'name' || path === 'symbol')) renderCoSelect();
+  clearTimeout(upT); upT = setTimeout(() => { const v = VIEWS[UI.view]; v && v.update && v.update(); }, 160);
+  return true;
+}
+document.addEventListener('input', e => onBind(e.target));
+document.addEventListener('change', e => {
+  if (e.target.id === 'indSel') { UI.ind = e.target.value; store.set(LS_UI, UI); render(); return; }
+  if (e.target.tagName === 'SELECT') onBind(e.target);
+});
+document.addEventListener('click', async e => {
+  const nav = e.target.closest('[data-nav]'); if (nav) { go(nav.dataset.nav); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const c = cur(); const a = b.dataset.act; const i = +b.dataset.i;
+  const A = {
+    addProduct() { c.products.push(newProduct()); save(); render(); },
+    delProduct() { c.products.splice(i, 1); if (!c.products.length) c.products.push(newProduct()); save(); render(); },
+    addPeer() { (c.peers = c.peers || []).push({ id: uid(), name: '', price: '', eps: '' }); save(); render(); },
+    delPeer() { c.peers.splice(i, 1); save(); render(); },
+    prefill() { const id = b.dataset.id; const map = PREFILL[id]; c.deep[id] = c.deep[id] || {}; Object.entries(map).forEach(([k, src]) => { if (getPath(c, src)) c.deep[id][k] = getPath(c, src); }); save(); render(); },
+    score() { c.implicit[b.dataset.k] = b.dataset.n; save(); render(); },
+    investCheck() { SET.investChecks[b.dataset.k] = b.checked; saveSet(); },
+    growthConfirmed() { SET.growthConfirmed = b.checked; saveSet(); VIEWS.portfolio.update(); },
+    addDeal() { DB.deals.push({ stock: c.name, qty: '', buy: c.price || '', sell: '', bought: false, sold: false }); save(); render(); },
+    delDeal() { DB.deals.splice(i, 1); save(); render(); },
+    dealFlag() { DB.deals[i][b.dataset.k] = b.checked; save(); VIEWS.portfolio.update(); },
+    sched() { const p = b.dataset.p; const key = periodKey(p); if (!DB.schedule[p] || DB.schedule[p].key !== key) DB.schedule[p] = { key, done: {} }; DB.schedule[p].done[b.dataset.i] = b.checked; save(); },
+    pickInd() { UI.ind = b.dataset.id; store.set(LS_UI, UI); render(); },
+    aiEnable() { SET.enabled[b.dataset.p] = b.checked; saveSet(); },
+    aiSearch() { SET.search = b.checked; saveSet(); },
+    aiRun() { runAI('full'); },
+    aiAsk() { runAI('ask'); },
+    aiRaw() { const r = document.getElementById('raw-' + b.dataset.p); if (r) r.hidden = !r.hidden; },
+    async aiAdopt() { const e = (c.ai || {})[b.dataset.p]; if (!e || !e.data) return; if (!(await askConfirm(`سيتم استبدال بيانات «${c.name}» ببيانات ${PROV[b.dataset.p].name}. متابعة؟`))) return; applyData(c, e.data); save(); renderCoSelect(); toast('اعتُمدت البيانات'); go('dash'); },
+    aiAdoptNew() { const e = (c.ai || {})[b.dataset.p]; if (!e || !e.data) return; const n = applyData(newCompany(''), e.data); n.ai = { [b.dataset.p]: e }; DB.companies.push(n); DB.current = n.id; save(); renderCoSelect(); toast('أُنشئت شركة جديدة'); go('dash'); },
+    toggleKey() { const inp = document.getElementById('key-' + b.dataset.p); inp.type = inp.type === 'password' ? 'text' : 'password'; },
+    async testKey() { const p = b.dataset.p; const out = document.getElementById('test-' + p); out.textContent = 'جارٍ الاختبار…'; out.style.color = 'var(--muted)';
+      SET.keys[p] = cleanKey(SET.keys[p]); saveSet(); document.getElementById('key-' + p).value = SET.keys[p];
+      try {
+        let ids = []; try { ids = await listModels(p); } catch (e) { if (e.status === 401 || e.status === 0) throw e; }
+        if (ids.length) { SET.modelList = SET.modelList || {}; SET.modelList[p] = ids; if (!ids.includes(SET.models[p].trim())) { SET.models[p] = bestModel(p, ids); } saveSet(); const mi = document.getElementById('model-' + p); mi.value = SET.models[p]; document.getElementById('ml-' + p).innerHTML = ids.map(m => `<option value="${esc(m)}">`).join(''); }
+        const r = await CALL[p]('أجب بكلمة واحدة.', 'قل: جاهز', false);
+        out.textContent = `✓ يعمل · النموذج ${SET.models[p]}${ids.length ? ` · ${ids.length} نموذجاً متاحاً` : ''} · الرد: ${(r.text || '').trim().slice(0, 20)}`; out.style.color = 'var(--up)';
+      } catch (err) { out.textContent = '✕ ' + err.message; out.style.color = 'var(--down)'; } },
+    async testAll() { for (const p of Object.keys(PROV)) { if (!SET.keys[p]) continue; const btn = document.querySelector(`[data-act="testKey"][data-p="${p}"]`); if (btn) btn.click(); } }
+  };
+  if (A[a]) await A[a]();
+});
+$('#coSelect').addEventListener('change', e => { DB.current = e.target.value; save(); render(); });
+$('#btnNew').onclick = () => { const n = newCompany('شركة جديدة'); DB.companies.push(n); DB.current = n.id; save(); renderCoSelect(); go('revised'); };
+$('#btnDup').onclick = () => { const n = JSON.parse(JSON.stringify(cur())); n.id = uid(); n.name += ' (نسخة)'; DB.companies.push(n); DB.current = n.id; save(); renderCoSelect(); render(); };
+$('#btnDel').onclick = async () => { if (!(await askConfirm(`حذف «${cur().name}» نهائياً؟`))) return; DB.companies = DB.companies.filter(c => c.id !== DB.current); if (!DB.companies.length) DB.companies.push(exampleCompany()); DB.current = DB.companies[0].id; save(); renderCoSelect(); render(); };
+$('#btnExport').onclick = () => { const blob = new Blob([JSON.stringify({ app: 'mizan', v: 1, at: new Date().toISOString(), data: DB, models: SET.models }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `ميزان-القيمة-${new Date().toISOString().slice(0, 10)}.json`; document.body.appendChild(a); a.click(); a.remove(); toast('صُدّرت البيانات (بدون المفاتيح)'); };
+$('#fileImport').onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { const j = JSON.parse(r.result); const d = j.data || j; const ids = new Set(DB.companies.map(c => c.id)); (d.companies || []).forEach(c => { if (ids.has(c.id)) c.id = uid(); DB.companies.push(c); }); if (Array.isArray(d.deals)) DB.deals.push(...d.deals); save(); renderCoSelect(); render(); toast(`استُوردت ${(d.companies || []).length} شركة`); } catch (err) { toast('الملف غير صالح'); } }; r.readAsText(f); e.target.value = ''; };
+$('#btnTheme').onclick = () => { const cu = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); const nx = cu === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = nx; UI.theme = nx; store.set(LS_UI, UI); render(); };
+if (UI.theme) document.documentElement.dataset.theme = UI.theme;
+
+
+/* ========= Saudi market universe — Tadawul main market, REITs and Nomu ========= */
+const SAUDI = SAUDI_RAW.trim().split('\n').map(l => { const [s, ar, en, sec] = l.split('|'); const mk = sec === 'نمو' ? 'nomu' : sec === 'الصناديق العقارية' ? 'reit' : 'main'; return { s, ar, en, sec: mk === 'nomu' ? 'السوق الموازية (نمو)' : sec, mk }; });
+const MK_TXT = { main: 'السوق الرئيسية', reit: 'صناديق ريت', nomu: 'نمو' };
+const normAr = t => String(t || '').toLowerCase().replace(/[إأآا]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[ًٌٍَُِّْـ]/g, '');
+const QUEUE = { items: [], running: false, current: null, done: 0, total: 0 };
+const coBySym = s => DB.companies.find(c => String(c.symbol) === String(s));
+
+function openStock(st) {
+  let c = coBySym(st.s);
+  if (!c) { c = newCompany(st.ar); c.symbol = st.s; c.sector = st.sec; c.market = st.mk; c.en = st.en; c.products = [newProduct()]; DB.companies.push(c); }
+  DB.current = c.id; save(); renderCoSelect(); return c;
+}
+function stockTarget(st) { return `${st.ar} (${st.en}) — رمز تداول ${st.s} — ${MK_TXT[st.mk]}، قطاع ${st.sec}`; }
+async function analyzeStock(sym, { go: goAfter } = {}) {
+  const st = SAUDI.find(x => x.s === sym); if (!st) return;
+  const c = openStock(st); const year = String(SET.valYear || new Date().getFullYear() + 1);
+  c.aiStatus = 'run'; refreshViews();
+  try { await analyze(c, 'full', { target: stockTarget(st), year, notes: '' }); const p = autoAdopt(c); c.aiStatus = p ? 'ok' : 'err'; }
+  catch (e) { c.aiStatus = 'err'; if (e.message === 'no-keys') throw e; }
+  save(); refreshViews();
+  if (goAfter && DB.current === c.id) go('dash');
+}
+async function runQueue() {
+  if (QUEUE.running) return; QUEUE.running = true;
+  while (QUEUE.items.length) {
+    const s = QUEUE.items.shift(); QUEUE.current = s; refreshViews();
+    try { await analyzeStock(s); } catch (e) { if (e.message === 'no-keys') { QUEUE.items = []; break; } }
+    QUEUE.done++;
+  }
+  QUEUE.running = false; QUEUE.current = null; refreshViews(); toast('اكتمل تحليل الأسهم المحددة');
+}
+
+let MK = Object.assign({ q: '', sec: '', mk: 'main', only: '', sel: [] }, store.get('mizan.market.v1', {}));
+const saveMK = () => store.set('mizan.market.v1', MK);
+VIEWS.market = {
+  render() {
+    const secs = [...new Set(SAUDI.filter(x => !MK.mk || x.mk === MK.mk).map(x => x.sec))];
+    const noKeys = !Object.values(SET.keys).some(Boolean);
+    return `${head('أسهم السوق السعودية', `${SAUDI.filter(x => x.mk === 'main').length} شركة في السوق الرئيسية، و${SAUDI.filter(x => x.mk === 'reit').length} صندوق ريت، و${SAUDI.filter(x => x.mk === 'nomu').length} شركة في نمو. اختر السهم فيبحث Claude وChatGPT وGemini عن بياناته، ثم تُطبَّق عليه معادلات الكتاب كلها تلقائياً.`)}
+    <div class="stack">${noKeys ? `<div class="banner warn">لتحليل الأسهم أضف مفتاح نموذج واحد على الأقل. <button class="btn sm" data-nav="settings">إضافة المفاتيح</button></div>` : ''}
+      <section class="panel"><div class="fields" style="grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr))">
+        <div class="f"><label for="stkQ">ابحث بالاسم أو الرمز</label><input id="stkQ" type="search" value="${esc(MK.q)}" placeholder="الراجحي، 2010، Almarai…" autocomplete="off"></div>
+        <div class="f"><label for="stkMk">السوق</label><select id="stkMk">${[['', 'الكل'], ['main', 'السوق الرئيسية'], ['reit', 'صناديق ريت'], ['nomu', 'نمو (الموازية)']].map(([v, t]) => `<option value="${v}"${MK.mk === v ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
+        <div class="f"><label for="stkSec">القطاع</label><select id="stkSec"><option value="">كل القطاعات</option>${secs.map(x => `<option${MK.sec === x ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
+        <div class="f"><label for="stkOnly">العرض</label><select id="stkOnly">${[['', 'كل الأسهم'], ['done', 'المحللة فقط'], ['buy', 'إشارة شراء'], ['sell', 'إشارة بيع']].map(([v, t]) => `<option value="${v}"${MK.only === v ? ' selected' : ''}>${t}</option>`).join('')}</select></div></div>
+        <div class="row gap" style="margin-top:12px" id="o-mkbar"></div></section>
+      <div id="o-mk"></div></div>`;
+  },
+  update() {
+    const q = normAr(MK.q.trim());
+    let rows = SAUDI.filter(x => (!MK.mk || x.mk === MK.mk) && (!MK.sec || x.sec === MK.sec) && (!q || normAr(x.ar).includes(q) || x.s.startsWith(q) || x.en.toLowerCase().includes(q)));
+    const info = st => { const c = coBySym(st.s); if (!c) return null; const R = revised(c); if (!R.complete) return { c }; const cl = classify(c); return { c, R, S: signal(c, R, cl), cl }; };
+    let data = rows.map(st => ({ st, i: info(st) }));
+    if (MK.only === 'done') data = data.filter(x => x.i && x.i.R); if (MK.only === 'buy') data = data.filter(x => x.i && x.i.S && x.i.S.s === 'buy'); if (MK.only === 'sell') data = data.filter(x => x.i && x.i.S && x.i.S.s === 'sell');
+    const sel = new Set(MK.sel);
+    $('#o-mkbar').innerHTML = `<span class="small muted">${data.length} سهماً</span>
+      <button class="btn sm" data-act="mkRunSel"${sel.size && !QUEUE.running ? '' : ' disabled'}>تحليل المحدد (${sel.size})</button>
+      <button class="btn ghost sm" data-act="mkClearSel"${sel.size ? '' : ' disabled'}>إلغاء التحديد</button>
+      ${QUEUE.running ? `<span class="chip warn">يحلل الآن ${esc((SAUDI.find(x => x.s === QUEUE.current) || {}).ar || '')} · ${QUEUE.done} من ${QUEUE.total}</span><button class="btn ghost danger sm" data-act="mkStop">إيقاف بعد الحالي</button>` : ''}
+      <span class="small muted">كل سهم يستهلك طلباً من كل نموذج مفعّل.</span>`;
+    const show = data.slice(0, 400);
+    $('#o-mk').innerHTML = !show.length ? '<div class="empty">لا توجد أسهم مطابقة.</div>' : `<div class="tw"><table><thead><tr><th style="width:34px"></th><th>الرمز</th><th>الشركة</th><th>القطاع</th><th class="n">السعر</th><th class="n">القيمة العادلة</th><th class="n">الخصم</th><th>التصنيف</th><th>الإشارة</th><th></th></tr></thead><tbody>
+      ${show.map(({ st, i }) => { const c = i && i.c; const running = (c && c.aiStatus === 'run') || QUEUE.current === st.s; const price = c ? num(c.price) : NaN; const fv = i && i.R ? i.R.fv : NaN; const disc = (fv - price) / fv * 100;
+        return `<tr><td><input type="checkbox" data-act="mkSel" data-s="${st.s}"${sel.has(st.s) ? ' checked' : ''} aria-label="تحديد ${esc(st.ar)}" style="accent-color:var(--gold)"></td>
+          <td class="n"><b>${st.s}</b></td><td style="min-width:180px"><div>${esc(st.ar)}</div><div class="small faint" style="direction:ltr;text-align:right">${esc(st.en)}</div></td><td class="small muted">${esc(st.sec)}</td>
+          <td class="n">${isNaN(price) ? '—' : fmt(price)}</td><td class="n" style="color:var(--gold2);font-weight:600">${isNaN(fv) ? '—' : fmt(fv)}</td>
+          <td class="n" style="color:var(${disc >= 0 ? '--up' : '--down'})">${isFinite(disc) ? pct(disc) : '—'}</td>
+          <td>${i && i.cl && i.cl.info ? chip(i.cl.info.t.replace(/ \(.*\)/, ''), i.cl.info.cls) : ''}</td>
+          <td>${running ? '<span class="chip warn"><span class="dot run"></span> يحلل</span>' : i && i.S && i.S.label !== '—' ? chip(i.S.label, i.S.s === 'buy' ? 'up' : i.S.s === 'sell' ? 'down' : 'warn') : c && c.aiStatus === 'err' ? chip('تعذر', 'down') : ''}</td>
+          <td style="white-space:nowrap"><button class="btn sm${i && i.R ? ' ghost' : ''}" data-act="mkAnalyze" data-s="${st.s}"${running ? ' disabled' : ''}>${i && i.R ? 'تحديث' : 'تحليل'}</button>${c ? ` <button class="btn ghost sm" data-act="mkOpen" data-s="${st.s}">فتح</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div>`;
+  }
+};
+document.addEventListener('input', e => { if (e.target.id === 'stkQ') { MK.q = e.target.value; saveMK(); clearTimeout(upT); upT = setTimeout(() => VIEWS.market.update(), 120); } });
+document.addEventListener('change', e => {
+  const id = e.target.id;
+  if (id === 'stkMk') { MK.mk = e.target.value; MK.sec = ''; saveMK(); render(); }
+  if (id === 'stkSec') { MK.sec = e.target.value; saveMK(); VIEWS.market.update(); }
+  if (id === 'stkOnly') { MK.only = e.target.value; saveMK(); VIEWS.market.update(); }
+});
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act; const s = b.dataset.s;
+  if (a === 'mkSel') { const set = new Set(MK.sel); b.checked ? set.add(s) : set.delete(s); MK.sel = [...set]; saveMK(); VIEWS.market.update(); }
+  if (a === 'mkClearSel') { MK.sel = []; saveMK(); VIEWS.market.update(); }
+  if (a === 'mkOpen') { openStock(SAUDI.find(x => x.s === s)); go('dash'); }
+  if (a === 'mkAnalyze') { try { await analyzeStock(s, { go: true }); } catch (err) { } }
+  if (a === 'mkRunSel') { QUEUE.items = MK.sel.slice(); QUEUE.total = QUEUE.items.length; QUEUE.done = 0; MK.sel = []; saveMK(); runQueue(); }
+  if (a === 'mkStop') { QUEUE.items = []; toast('سيتوقف بعد السهم الحالي'); }
+});
+renderCoSelect(); renderNav(); render();
+
+</script>
+</body>
+</html>
