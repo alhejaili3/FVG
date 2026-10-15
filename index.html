@@ -1662,6 +1662,7 @@ function explainErr(p, status, raw) {
   const r = String(raw || ''); const L = r.toLowerCase(); let why;
   if (status === 0) why = 'تعذر الوصول إلى الخادم. غالباً الملف مفتوح داخل نافذة معاينة (مثل معاينة تطبيق Claude) تمنع الاتصال الخارجي، أو هناك حجب في الشبكة. احفظ الملف على جهازك وافتحه بالنقر المزدوج في Chrome أو Edge.';
   else if (status === 401 || /invalid.*(api|x-api)?.?key|api key not valid|incorrect api key|authentication/i.test(r)) why = 'المفتاح غير صحيح. انسخه من جديد كاملاً من لوحة ' + PNAME[p] + ' والصقه دون مسافات.';
+  else if (p === 'gemini' && status === 429 && /free_tier|free tier|limit: ?0/i.test(r)) why = 'مفتاح Gemini على الباقة المجانية، وهذا النموذج غير مشمول فيها أو انتهت حصته اليومية. استخدم نموذج Flash (مجاني)، أو فعّل الفوترة في Google AI Studio لاستخدام نماذج Pro.';
   else if (/credit balance|insufficient_quota|billing|exceeded your current quota|quota/i.test(r)) why = 'لا يوجد رصيد API في حسابك لدى ' + PNAME[p] + '. اشتراك التطبيق الشهري لا يشمل رصيد API؛ أضف رصيداً من صفحة الفوترة في لوحة المطورين.';
   else if (status === 404 || /model.*(not found|does not exist|not supported|is not available)|unknown model|no such model/i.test(r)) why = 'اسم النموذج غير متاح لحسابك. اضغط «جلب النماذج المتاحة» واختر من القائمة.';
   else if (status === 403 || /permission|not allowed|location is not supported|region/i.test(r)) why = 'المفتاح لا يملك صلاحية لهذا الطلب (قد تكون الخدمة أو أداة البحث غير مفعلة لحسابك أو منطقتك).';
@@ -1743,16 +1744,20 @@ function bestModel(p, ids) { return rankModels(p, ids)[0]; }
 /* when a provider says a model is retired, try the one it suggests, then the next best */
 const suggested = e => { const m = String(e && e.raw || '').match(/use\s+(?:models\/)?([\w.\-]+)/i); return m ? m[1].replace(/[.,]$/, '') : null; };
 const isModelErr = e => e instanceof ApiErr && (e.status === 404 || /model/i.test(e.raw || '') && /not (found|available|supported)|no longer|deprecat|does not exist/i.test(e.raw || ''));
+const isFreeQuota = e => e instanceof ApiErr && e.status === 429 && /free_tier|free tier|limit: ?0/i.test(e.raw || '');
 async function withModelFallback(p, fn) {
   try { return await fn(); }
   catch (e) {
-    if (!isModelErr(e)) throw e;
+    const quota = p === 'gemini' && isFreeQuota(e);
+    if (!isModelErr(e) && !quota) throw e;
     const tried = new Set([SET.models[p]]);
-    const cands = [suggested(e), ...rankModels(p, (SET.modelList || {})[p] || [])].filter(x => x && !tried.has(x)).slice(0, 5);
+    const known = (SET.modelList || {})[p] || [];
+    const flash = rankModels(p, known.length ? known : ['gemini-3.1-flash', 'gemini-3-flash', 'gemini-2.5-flash', 'gemini-flash-latest']).filter(m => /flash/.test(m));
+    const cands = (quota ? flash : [suggested(e), ...rankModels(p, known)]).filter(x => x && !tried.has(x)).slice(0, 6);
     for (const m of cands) {
       tried.add(m); SET.models[p] = m; saveSet();
       try { const r = await fn(); toast(`${PROV[p].name}: تم التبديل تلقائياً إلى ${m}`); return r; }
-      catch (e2) { if (!isModelErr(e2)) throw e2; }
+      catch (e2) { if (!isModelErr(e2) && !(p === 'gemini' && isFreeQuota(e2))) throw e2; }
     }
     throw e;
   }
