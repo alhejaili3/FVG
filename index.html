@@ -1273,8 +1273,17 @@ function srcBar(c) {
   const st = SAUDI.find(x => x.s === String(c.symbol)); if (!st) return '';
   const running = c.aiStatus === 'run';
   const n = Object.values(c.ai || {}).filter(e => e && isFinite(e.fv)).length;
-  return `<div class="row gap spread panel flat" style="padding:10px 14px"><span class="small">${running ? '<span class="dot run"></span> تبحث النماذج الآن عن بيانات السهم…' : c.adoptedFrom ? `البيانات المعتمدة من <b>${PROV[c.adoptedFrom].name}</b> (${SET.autoAdopt && SET.autoAdopt !== 'median' ? 'حسب إعدادك' : 'النموذج الأقرب لوسيط ' + n + ' نماذج'}) · ${new Date(c.adoptedAt).toLocaleString('ar-SA-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' })}` : 'لم يُحلَّل هذا السهم بعد.'}</span>
-    <span class="row gap"><button class="btn sm" data-act="mkAnalyze" data-s="${st.s}"${running ? ' disabled' : ''}>${c.adoptedFrom ? 'تحديث التحليل' : 'تحليل بالنماذج'}</button>${n ? '<button class="btn ghost sm" data-nav="ai">مقارنة النماذج</button>' : ''}</span></div>`;
+  const provs = Object.keys(PROV).filter(p => SET.enabled[p] && SET.keys[p]);
+  const rows = provs.map(p => { const r = RUN[c.id + p] || {}; const e = (c.ai || {})[p];
+    const state = r.status === 'run' ? 'run' : e ? (e.error ? 'err' : 'ok') : '';
+    const msg = r.status === 'run' ? `يبحث ويحلل… <span class="mono" data-t0="${r.t0}"></span>` : e ? (e.error ? esc(e.error) : `قيمة عادلة ${fmt(e.fv)} ﷼`) : 'لم يُشغَّل';
+    return `<div class="row gap small" style="align-items:flex-start;flex-wrap:nowrap"><span class="dot ${state}" style="margin-top:7px;flex:none"></span><b style="flex:none">${PROV[p].name}</b><span class="${state === 'err' ? '' : 'muted'}" style="${state === 'err' ? 'color:var(--down)' : ''};overflow-wrap:anywhere">${msg}</span></div>`; }).join('');
+  const head = running ? 'تبحث النماذج الآن عن بيانات السهم. قد يستغرق ذلك دقيقة إلى ثلاث دقائق؛ أبقِ الصفحة مفتوحة ولا تقفل الشاشة.'
+    : c.adoptedFrom ? `البيانات المعتمدة من <b>${PROV[c.adoptedFrom].name}</b> (${SET.autoAdopt && SET.autoAdopt !== 'median' ? 'حسب إعدادك' : 'النموذج الأقرب لوسيط ' + n + ' نماذج'}) · ${new Date(c.adoptedAt).toLocaleString('ar-SA-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' })}`
+    : c.aiStatus === 'err' ? '<span style="color:var(--down)">تعذر التحليل. سبب كل نموذج مذكور أدناه.</span>' : !provs.length ? 'لا توجد مفاتيح مفعّلة. أضف مفتاحاً من صفحة المفاتيح والنماذج.' : 'لم يُحلَّل هذا السهم بعد.';
+  return `<div class="panel flat stack" style="padding:12px 14px;gap:10px"><div class="row gap spread"><span class="small">${head}</span>
+    <span class="row gap"><button class="btn sm" data-act="mkAnalyze" data-s="${st.s}"${running || !provs.length ? ' disabled' : ''}>${running ? 'جارٍ التحليل…' : c.adoptedFrom ? 'تحديث التحليل' : 'تحليل بالنماذج'}</button>${n ? '<button class="btn ghost sm" data-nav="ai">مقارنة النماذج</button>' : ''}${!provs.length ? '<button class="btn ghost sm" data-nav="settings">المفاتيح</button>' : ''}</span></div>
+    ${provs.length && (running || c.aiStatus || n) ? `<div class="stack" style="gap:6px">${rows}</div>` : ''}</div>`;
 }
 function ladder(c, R) {
   const fv = R.fv, entry = num(c.entryPrice), price = num(c.price);
@@ -1812,7 +1821,8 @@ async function runAI(mode) {
   if (mode === 'full' && SET.autoAdopt !== 'off') autoAdopt(c);
   toast('اكتمل التحليل');
 }
-function refreshViews() { const v = VIEWS[UI.view]; if (v && v.update && (UI.view === 'ai' || UI.view === 'market')) v.update(); }
+function refreshViews() { const v = VIEWS[UI.view]; if (!v) return; if (UI.view === 'dash') { const y = window.scrollY; render(); window.scrollTo(0, y); } else if (v.update && (UI.view === 'ai' || UI.view === 'market')) v.update(); }
+setInterval(() => { $$('[data-t0]').forEach(el => { el.textContent = Math.round((Date.now() - +el.dataset.t0) / 1000) + 'ث'; }); }, 1000);
 async function analyze(c, mode, { target, year, q, notes }) {
   const provs = Object.keys(PROV).filter(p => SET.enabled[p] && SET.keys[p]);
   if (!provs.length) { toast('أضف مفتاح نموذج واحد على الأقل وفعّله'); go('settings'); throw new Error('no-keys'); }
@@ -2002,7 +2012,7 @@ function stockTarget(st) { return `${st.ar} (${st.en}) — رمز تداول ${s
 async function analyzeStock(sym, { go: goAfter } = {}) {
   const st = SAUDI.find(x => x.s === sym); if (!st) return;
   const c = openStock(st); const year = String(SET.valYear || new Date().getFullYear() + 1);
-  c.aiStatus = 'run'; refreshViews();
+  c.aiStatus = 'run'; c.adoptedFrom = c.adoptedFrom || null; save(); refreshViews();
   try { await analyze(c, 'full', { target: stockTarget(st), year, notes: '' }); const p = autoAdopt(c); c.aiStatus = p ? 'ok' : 'err'; }
   catch (e) { c.aiStatus = 'err'; if (e.message === 'no-keys') throw e; }
   save(); refreshViews();
@@ -2070,7 +2080,7 @@ document.addEventListener('click', async e => {
   if (a === 'mkSel') { const set = new Set(MK.sel); b.checked ? set.add(s) : set.delete(s); MK.sel = [...set]; saveMK(); VIEWS.market.update(); }
   if (a === 'mkClearSel') { MK.sel = []; saveMK(); VIEWS.market.update(); }
   if (a === 'mkOpen') { openStock(SAUDI.find(x => x.s === s)); go('dash'); }
-  if (a === 'mkAnalyze') { try { await analyzeStock(s, { go: true }); } catch (err) { } }
+  if (a === 'mkAnalyze') { b.disabled = true; b.textContent = 'جارٍ التحليل…'; try { await analyzeStock(s, { go: true }); const c = coBySym(s); if (c && c.aiStatus === 'err') toast('تعذر التحليل: راجع سبب كل نموذج في صفحة الملخص'); } catch (err) { if (err.message !== 'no-keys') toast('خطأ: ' + err.message); } }
   if (a === 'mkRunSel') { QUEUE.items = MK.sel.slice(); QUEUE.total = QUEUE.items.length; QUEUE.done = 0; MK.sel = []; saveMK(); runQueue(); }
   if (a === 'mkStop') { QUEUE.items = []; toast('سيتوقف بعد السهم الحالي'); }
 });
