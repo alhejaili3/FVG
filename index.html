@@ -1732,9 +1732,32 @@ async function listModels(p) {
   const j = await req(p, 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + encodeURIComponent(key('gemini')), {});
   return (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, '')).filter(id => /gemini/i.test(id) && !/embedding|image|tts|audio|live/i.test(id));
 }
-const PREF = { claude: [/opus-5-5/, /sonnet-5-5/, /opus/, /sonnet/], openai: [/^gpt-5\.5$/, /^gpt-6/, /^gpt-5(\.\d)?$/, /^gpt-5/, /^gpt-4\.1$/, /^gpt-4o$/], gemini: [/pro$/, /pro/, /flash$/, /flash/] };
-function bestModel(p, ids) { for (const rx of PREF[p]) { const f = ids.filter(id => rx.test(id)).sort().reverse()[0]; if (f) return f; } return ids[0]; }
-const CALL = { claude: callClaude, openai: callOpenAI, gemini: callGemini };
+const verOf = id => { const m = String(id).match(/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; };
+const tierOf = (p, id) => p === 'gemini' ? (/pro/.test(id) ? 0 : /flash(?!-lite)/.test(id) ? 1 : 2) : p === 'claude' ? (/opus/.test(id) ? 0 : /sonnet/.test(id) ? 1 : 2) : (/mini|nano/.test(id) ? 2 : 0);
+function rankModels(p, ids) {
+  let pool = ids;
+  if (p === 'openai') pool = ids.filter(id => /^gpt-\d/.test(id) && !/\d{4}-\d{2}-\d{2}/.test(id)).concat(ids.filter(id => !/^gpt-\d/.test(id) || /\d{4}-\d{2}-\d{2}/.test(id)));
+  return [...new Set(pool)].sort((a, b) => (verOf(b) - verOf(a)) || (tierOf(p, a) - tierOf(p, b)) || (/preview|exp/.test(a) - /preview|exp/.test(b)) || a.length - b.length);
+}
+function bestModel(p, ids) { return rankModels(p, ids)[0]; }
+/* when a provider says a model is retired, try the one it suggests, then the next best */
+const suggested = e => { const m = String(e && e.raw || '').match(/use\s+(?:models\/)?([\w.\-]+)/i); return m ? m[1].replace(/[.,]$/, '') : null; };
+const isModelErr = e => e instanceof ApiErr && (e.status === 404 || /model/i.test(e.raw || '') && /not (found|available|supported)|no longer|deprecat|does not exist/i.test(e.raw || ''));
+async function withModelFallback(p, fn) {
+  try { return await fn(); }
+  catch (e) {
+    if (!isModelErr(e)) throw e;
+    const tried = new Set([SET.models[p]]);
+    const cands = [suggested(e), ...rankModels(p, (SET.modelList || {})[p] || [])].filter(x => x && !tried.has(x)).slice(0, 5);
+    for (const m of cands) {
+      tried.add(m); SET.models[p] = m; saveSet();
+      try { const r = await fn(); toast(`${PROV[p].name}: تم التبديل تلقائياً إلى ${m}`); return r; }
+      catch (e2) { if (!isModelErr(e2)) throw e2; }
+    }
+    throw e;
+  }
+}
+const CALL = { claude: (a, b, c) => withModelFallback('claude', () => callClaude(a, b, c)), openai: (a, b, c) => withModelFallback('openai', () => callOpenAI(a, b, c)), gemini: (a, b, c) => withModelFallback('gemini', () => callGemini(a, b, c)) };
 
 function extractJSON(t) {
   if (!t) throw new Error('رد فارغ من النموذج');
@@ -1941,7 +1964,7 @@ document.addEventListener('click', async e => {
       try {
         let ids = []; try { ids = await listModels(p); } catch (e) { if (e.status === 401 || e.status === 0) throw e; }
         if (ids.length) { SET.modelList = SET.modelList || {}; SET.modelList[p] = ids; if (!ids.includes(SET.models[p].trim())) { SET.models[p] = bestModel(p, ids); } saveSet(); const mi = document.getElementById('model-' + p); mi.value = SET.models[p]; document.getElementById('ml-' + p).innerHTML = ids.map(m => `<option value="${esc(m)}">`).join(''); }
-        const r = await CALL[p]('أجب بكلمة واحدة.', 'قل: جاهز', false);
+        const r = await CALL[p]('أجب بكلمة واحدة.', 'قل: جاهز', false); const mi2 = document.getElementById('model-' + p); if (mi2) mi2.value = SET.models[p];
         out.textContent = `✓ يعمل · النموذج ${SET.models[p]}${ids.length ? ` · ${ids.length} نموذجاً متاحاً` : ''} · الرد: ${(r.text || '').trim().slice(0, 20)}`; out.style.color = 'var(--up)';
       } catch (err) { out.textContent = '✕ ' + err.message; out.style.color = 'var(--down)'; } },
     async testAll() { for (const p of Object.keys(PROV)) { if (!SET.keys[p]) continue; const btn = document.querySelector(`[data-act="testKey"][data-p="${p}"]`); if (btn) btn.click(); } }
